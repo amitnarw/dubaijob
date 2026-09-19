@@ -6,8 +6,11 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "dubaijob",
-    "userInterfaceStyle": "automatic",
-    "platforms": ["android"],
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0A0A0C",
+    "platforms": [
+      "android"
+    ],
     "android": {
       "package": "com.dubaijob.app",
       "adaptiveIcon": {
@@ -23,11 +26,15 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#0A0A0C",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      "expo-iap",
+      "@react-native-google-signin/google-signin",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth"
     ],
     "experiments": {
       "typedRoutes": true,
