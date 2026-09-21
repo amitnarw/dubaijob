@@ -7,6 +7,9 @@ export const UR = {
   tab_radio: 'ریڈیو',
   tab_podcast: 'پوڈکاسٹ',
   tab_search: 'تلاش',
+  tab_course: 'کورس',
+  tab_packages: 'پیکجز',
+  tab_proof: 'ثبوت',
 
   home_title: 'ہوم',
   home_subtitle: 'دبئی جاب کورس، ماسٹرکلاسز اور کیریئر آڈیو',

@@ -7,6 +7,9 @@ export const TA = {
   tab_radio: 'ரேடியோ',
   tab_podcast: 'பாட்காஸ்ட்',
   tab_search: 'தேடல்',
+  tab_course: 'பாடநெறி',
+  tab_packages: 'தொகுப்புகள்',
+  tab_proof: 'வெற்றி',
 
   home_title: 'முகப்பு',
   home_subtitle: 'துபாய் வேலை பாடநெறி, மாஸ்டர்கிளாஸ் மற்றும் தொழில் ஆடியோ',

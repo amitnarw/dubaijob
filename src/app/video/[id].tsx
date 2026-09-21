@@ -1,30 +1,36 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { WebView } from 'react-native-webview';
-import * as Linking from 'expo-linking';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Type, Presets, Spacing } from '@/constants/theme';
+import { Colors, Type, Spacing, Radii } from '@/constants/theme';
 import { COURSE_VIDEOS } from '@/data/courseVideos';
 import { GoldButton } from '@/components/GoldButton';
+import { CustomVideoPlayer } from '@/components/CustomVideoPlayer';
 import { usePurchases } from '@/context/PurchaseContext';
 import { useLocale } from '@/i18n/LocaleContext';
 import { markDone } from '@/services/courseService';
 import { ToastControl } from '@/services/toastControl';
-import { embedHtml, thumbnailUrl, watchUrl } from '@/services/youtubeService';
+import { thumbnailUrl } from '@/services/youtubeService';
 
 export default function VideoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { entitlements } = usePurchases();
   const { lang, t } = useLocale();
-  const [ready, setReady] = useState(false);
 
-  const video = useMemo(
-    () => COURSE_VIDEOS.find((v) => v.id === id) ?? COURSE_VIDEOS[0],
+  const currentIndex = useMemo(
+    () => Math.max(0, COURSE_VIDEOS.findIndex((v) => v.id === id)),
     [id],
   );
+
+  const video = useMemo(
+    () => COURSE_VIDEOS[currentIndex] ?? COURSE_VIDEOS[0],
+    [currentIndex],
+  );
+
+  const prevVideo = currentIndex > 0 ? COURSE_VIDEOS[currentIndex - 1] : null;
+  const nextVideo = currentIndex < COURSE_VIDEOS.length - 1 ? COURSE_VIDEOS[currentIndex + 1] : null;
+
   const locked = !entitlements.course && !video.freePreview;
-  const html = useMemo(() => embedHtml(video.id), [video.id]);
   const localizedTitle = video.title[lang] ?? video.title.en;
 
   useEffect(() => {
@@ -37,43 +43,56 @@ export default function VideoScreen() {
 
   return (
     <View style={styles.root}>
+      {/* Top Header */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.back}>
           <Ionicons name="arrow-back" size={22} color={Colors.text} />
         </Pressable>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {localizedTitle}
-        </Text>
+        <View style={styles.headerTitleWrap}>
+          <Text style={styles.headerKicker}>
+            Step {video.stepNumber} of {COURSE_VIDEOS.length} · {video.chapterTitle}
+          </Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {localizedTitle}
+          </Text>
+        </View>
       </View>
 
-      <View style={styles.player}>
-        {!ready && (
-          <Image source={{ uri: thumbnailUrl(video.id) }} style={styles.cover} />
-        )}
-        <WebView
-          source={{ html }}
-          style={styles.web}
-          allowsFullscreenVideo
-          mediaPlaybackRequiresUserAction={false}
-          javaScriptEnabled
-          domStorageEnabled
-          onLoadEnd={() => setReady(true)}
-        />
-        {!ready && (
-          <View style={styles.loader}>
-            <ActivityIndicator color={Colors.gold} size="large" />
+      <CustomVideoPlayer
+        videoId={video.id}
+        thumbnailUri={thumbnailUrl(video.id)}
+        title={localizedTitle}
+        stepNumber={video.stepNumber}
+        totalSteps={COURSE_VIDEOS.length}
+        durationString={video.duration}
+        locked={locked}
+        onUnlockPress={() =>
+          router.push({ pathname: '/checkout/[productId]', params: { productId: 'course_full' } })
+        }
+        onEnded={() => markDone(video.id).catch(() => {})}
+        onNextLesson={nextVideo ? () => router.replace(`/video/${nextVideo.id}`) : undefined}
+        onPrevLesson={prevVideo ? () => router.replace(`/video/${prevVideo.id}`) : undefined}
+        onBack={() => router.back()}
+      />
+
+      {/* Lesson Details & CTAs */}
+      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+        {/* Step metadata pill */}
+        <View style={styles.metaRow}>
+          <View style={styles.stepPill}>
+            <Text style={styles.stepPillText}>Step {video.stepNumber}</Text>
           </View>
-        )}
-      </View>
+          <Text style={styles.durationPill}>{video.duration}</Text>
+          <Text style={styles.sectionPill} numberOfLines={1}>
+            {video.sectionTitle}
+          </Text>
+        </View>
 
-      <ScrollView contentContainerStyle={styles.body}>
-        <Text style={styles.kicker}>{video.duration}</Text>
         <Text style={styles.title}>{localizedTitle}</Text>
-        {lang !== 'hi' && (
-          <Text style={styles.hindiNote}>{video.title.hi}</Text>
-        )}
+        {lang !== 'hi' && <Text style={styles.hindiNote}>{video.title.hi}</Text>}
         <Text style={styles.desc}>{video.description}</Text>
         {lang !== 'hi' && <Text style={styles.langNote}>{t('course_note_nonhindi')}</Text>}
+
         {locked ? (
           <GoldButton
             title={t('video_locked_cta')}
@@ -92,12 +111,43 @@ export default function VideoScreen() {
             style={styles.cta}
           />
         )}
-        <Pressable
-          onPress={() => Linking.openURL(watchUrl(video.id)).catch(() => {})}
-          style={styles.ytBtn}>
-          <Ionicons name="logo-youtube" size={16} color={Colors.muted} />
-          <Text style={styles.ytText}>{t('video_trouble')}</Text>
-        </Pressable>
+
+        {/* Next / Previous Lesson Navigation Strip */}
+        <View style={styles.navRow}>
+          {prevVideo ? (
+            <Pressable
+              onPress={() => router.replace(`/video/${prevVideo.id}`)}
+              style={styles.navCard}
+            >
+              <Ionicons name="arrow-back" size={16} color={Colors.muted} />
+              <View style={styles.navCardText}>
+                <Text style={styles.navCardSub}>Previous</Text>
+                <Text style={styles.navCardTitle} numberOfLines={1}>
+                  Step {prevVideo.stepNumber}
+                </Text>
+              </View>
+            </Pressable>
+          ) : (
+            <View style={styles.navCardPlaceholder} />
+          )}
+
+          {nextVideo ? (
+            <Pressable
+              onPress={() => router.replace(`/video/${nextVideo.id}`)}
+              style={[styles.navCard, styles.navCardNext]}
+            >
+              <View style={[styles.navCardText, { alignItems: 'flex-end' }]}>
+                <Text style={[styles.navCardSub, { color: Colors.gold }]}>Next Lesson</Text>
+                <Text style={styles.navCardTitle} numberOfLines={1}>
+                  Step {nextVideo.stepNumber}
+                </Text>
+              </View>
+              <Ionicons name="arrow-forward" size={16} color={Colors.gold} />
+            </Pressable>
+          ) : (
+            <View style={styles.navCardPlaceholder} />
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -113,8 +163,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.md,
     paddingHorizontal: Spacing.screen,
-    paddingTop: 52,
+    paddingTop: 50,
     paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
   },
   back: {
     width: 40,
@@ -124,50 +176,61 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerTitleWrap: {
+    flex: 1,
+  },
+  headerKicker: {
+    color: Colors.gold,
+    fontSize: 10.5,
+    fontFamily: 'Inter-Medium',
+    letterSpacing: 0.3,
+  },
   headerTitle: {
     ...Type.cardTitle,
     color: Colors.text,
-    flex: 1,
-  },
-  player: {
-    aspectRatio: 16 / 9,
-    backgroundColor: '#000',
-  },
-  web: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-  cover: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    zIndex: 1,
-  },
-  loader: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    zIndex: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    fontSize: 15,
   },
   body: {
     padding: Spacing.screen,
     gap: Spacing.sm,
+    paddingBottom: 48,
   },
-  kicker: {
-    ...Type.small,
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  stepPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: 'rgba(230, 184, 0, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(230, 184, 0, 0.4)',
+  },
+  stepPillText: {
     color: Colors.gold,
+    fontSize: 11,
+    fontFamily: 'Inter-Bold',
+  },
+  durationPill: {
+    color: Colors.muted,
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+  },
+  sectionPill: {
+    color: Colors.faint,
+    fontSize: 11.5,
+    fontFamily: 'Inter-Regular',
+    flex: 1,
   },
   title: {
     ...Type.chapterTitle,
-    fontSize: 24,
+    fontSize: 22,
     color: Colors.text,
+    lineHeight: 28,
   },
   hindiNote: {
     ...Type.small,
@@ -176,7 +239,7 @@ const styles = StyleSheet.create({
   desc: {
     ...Type.body,
     color: Colors.muted,
-    lineHeight: 24,
+    lineHeight: 22,
   },
   langNote: {
     ...Type.caption,
@@ -186,16 +249,45 @@ const styles = StyleSheet.create({
   cta: {
     marginTop: Spacing.md,
   },
-  ytBtn: {
+  navRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: Spacing.md,
-    padding: Spacing.md,
+    justifyContent: 'space-between',
+    gap: 12,
+    marginTop: Spacing.lg,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
   },
-  ytText: {
-    ...Type.small,
-    color: Colors.muted,
+  navCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    borderRadius: Radii.md,
+    backgroundColor: Colors.elevated,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  navCardNext: {
+    borderColor: 'rgba(230, 184, 0, 0.25)',
+    backgroundColor: 'rgba(230, 184, 0, 0.05)',
+  },
+  navCardPlaceholder: {
+    flex: 1,
+  },
+  navCardText: {
+    flex: 1,
+  },
+  navCardSub: {
+    color: Colors.faint,
+    fontSize: 10.5,
+    fontFamily: 'Inter-Medium',
+  },
+  navCardTitle: {
+    color: Colors.text,
+    fontSize: 12.5,
+    fontFamily: 'Inter-SemiBold',
   },
 });

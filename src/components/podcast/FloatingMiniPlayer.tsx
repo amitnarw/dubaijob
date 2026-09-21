@@ -32,7 +32,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   useEffect(() => {
     if (isPlaying) {
       pulseScale.value = withRepeat(
-        withTiming(1.04, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1.03, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
         -1,
         true
       );
@@ -61,30 +61,30 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
 
   const handleToggle = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    playScale.value = withSpring(0.85, { damping: 12, stiffness: 400 });
+    playScale.value = withSpring(0.85, { damping: 14, stiffness: 400 });
     setTimeout(() => {
-      playScale.value = withSpring(1, { damping: 12, stiffness: 400 });
+      playScale.value = withSpring(1, { damping: 14, stiffness: 400 });
     }, 70);
     togglePlay();
   };
 
   return (
     <Animated.View
-      entering={FadeInUp.duration(450).springify().damping(16)}
+      entering={FadeInUp.duration(350)}
       style={[styles.floatingWrapper, { bottom: bottomOffset }]}
     >
       <Pressable onPress={handleOpenVideo} style={styles.container}>
-        {/* Left Artwork with smooth playback pulse */}
+        {/* Left Artwork Thumbnail with subtle speaker badge */}
         <Animated.View style={pulseStyle}>
           <ConcentricArtwork
-            size={46}
-            theme={currentTrack.theme}
-            borderRadius={14}
+            size={44}
+            theme={currentTrack.theme || 'blue'}
+            borderRadius={12}
             showSpeakerBadge={true}
           />
         </Animated.View>
 
-        {/* Center Track Info & Progress Track */}
+        {/* Center Track Info & Slim Progress Bar */}
         <View style={styles.centerInfo}>
           <Text style={styles.title} numberOfLines={1}>
             {currentTrack.title}
@@ -93,26 +93,26 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
             {currentTrack.episode}
           </Text>
 
-          {/* Scrubber Progress Bar */}
+          {/* Scrubber Progress Bar directly below subtitle */}
           <View style={styles.progressTrack}>
             <View
               style={[
                 styles.progressFill,
-                { width: `${Math.min(100, Math.max(0, progress * 100))}%` },
+                { width: `${Math.min(100, Math.max(5, progress * 100))}%` },
               ]}
             />
           </View>
         </View>
 
-        {/* Right Play/Pause Button with buttery spring physics */}
+        {/* Right Play/Pause Button: Pure white circle with pitch black icon */}
         <AnimatedPressable
           onPress={handleToggle}
-          hitSlop={10}
+          hitSlop={8}
           style={[styles.playButton, playBtnStyle]}
         >
           <Ionicons
             name={isPlaying ? 'pause' : 'play'}
-            size={18}
+            size={16}
             color="#000000"
             style={isPlaying ? {} : { marginLeft: 2 }}
           />
@@ -125,46 +125,46 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
 const styles = StyleSheet.create({
   floatingWrapper: {
     position: 'absolute',
-    left: 16,
-    right: 16,
+    left: 14,
+    right: 14,
     zIndex: 99,
   },
   container: {
-    height: 66,
-    backgroundColor: '#1E1F25',
-    borderRadius: 26,
+    height: 62,
+    backgroundColor: '#1D1E24',
+    borderRadius: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 11,
+    paddingHorizontal: 10,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.45,
-    shadowRadius: 16,
-    elevation: 10,
+    shadowRadius: 14,
+    elevation: 8,
   },
   centerInfo: {
     flex: 1,
     marginLeft: 12,
-    marginRight: 12,
+    marginRight: 10,
     justifyContent: 'center',
   },
   title: {
     color: '#FFFFFF',
     fontSize: 13.5,
-    fontWeight: '700',
-    letterSpacing: -0.3,
+    fontFamily: 'Inter-Bold',
+    letterSpacing: -0.2,
   },
   subtitle: {
     color: '#8E8E98',
-    fontSize: 11,
-    fontWeight: '400',
+    fontSize: 11.5,
+    fontFamily: 'Inter-Regular',
     marginTop: 1,
   },
   progressTrack: {
     height: 3,
-    backgroundColor: '#32333B',
+    backgroundColor: '#35363F',
     borderRadius: 2,
     marginTop: 6,
     overflow: 'hidden',

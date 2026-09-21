@@ -13,7 +13,13 @@ import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown, FadeInRight, Layout } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInRight,
+  FadeOut,
+  LinearTransition,
+} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Colors, Type, Presets, Spacing, Radii } from '@/constants/theme';
 import { TOP_PODCASTS, CATEGORIES, AUTHORS, type PodcastItem } from '@/data/podcastData';
@@ -229,7 +235,23 @@ export default function MasterclassesTabScreen() {
               key={cat.id}
               entering={FadeInRight.duration(450).delay(index * 70).springify()}>
               <AnimatedPressableCard
-                onPress={() => router.push({ pathname: '/category/[id]', params: { id: cat.id } })}
+                onPress={() => {
+                  const map: Record<string, { ch: string; sec: 1 | 2 }> = {
+                    basics: { ch: 'ch-1', sec: 1 },
+                    cv: { ch: 'ch-2', sec: 1 },
+                    visa: { ch: 'ch-3', sec: 2 },
+                    jobhunt: { ch: 'ch-4', sec: 2 },
+                    attestation: { ch: 'ch-5', sec: 2 },
+                  };
+                  const target = map[cat.id];
+                  if (target) {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                    if (selectedSection !== 0 && selectedSection !== target.sec) {
+                      setSelectedSection(0);
+                    }
+                    setExpandedChapters((prev) => ({ ...prev, [target.ch]: true }));
+                  }
+                }}
                 style={styles.categoryCard}
                 scaleTo={0.93}>
                 <View
@@ -328,7 +350,7 @@ export default function MasterclassesTabScreen() {
               return (
                 <Animated.View
                   key={chapter.id}
-                  layout={Layout.springify().damping(18)}
+                  layout={LinearTransition.duration(200)}
                   style={styles.chapterCard}>
                   <Pressable onPress={() => toggleChapter(chapter.id)} style={styles.chapterHeader}>
                     <View style={styles.chapterMeta}>
@@ -355,7 +377,8 @@ export default function MasterclassesTabScreen() {
 
                   {isExpanded && (
                     <Animated.View
-                      entering={FadeInDown.duration(300).springify()}
+                      entering={FadeIn.duration(180)}
+                      exiting={FadeOut.duration(120)}
                       style={styles.chapterLessonsWrap}>
                       {chapterLessons.map((v) => (
                         <VideoRow

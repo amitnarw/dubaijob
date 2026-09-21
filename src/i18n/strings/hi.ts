@@ -7,6 +7,9 @@ export const HI = {
   tab_radio: 'रेडियो',
   tab_podcast: 'पॉडकास्ट',
   tab_search: 'सर्च',
+  tab_course: 'कोर्स',
+  tab_packages: 'पैकेज',
+  tab_proof: 'प्रूफ',
 
   home_title: 'होम',
   home_subtitle: 'दुबई जॉब कोर्स, मास्टरक्लास और करियर ऑडियो',

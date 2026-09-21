@@ -7,6 +7,9 @@ export const SI = {
   tab_radio: 'රේඩියෝ',
   tab_podcast: 'පොඩ්කාස්ට්',
   tab_search: 'සොයන්න',
+  tab_course: 'පාඨමාලාව',
+  tab_packages: 'පැකේජ',
+  tab_proof: 'සාක්ෂි',
 
   home_title: 'මුල් පිටුව',
   home_subtitle: 'දුබායි රැකියා පාඨමාලාව, මාස්ටර්ක්ලාස් සහ වෘත්තීය ඕඩියෝ',

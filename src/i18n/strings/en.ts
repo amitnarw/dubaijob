@@ -8,6 +8,9 @@ export const EN = {
   tab_radio: 'Radio',
   tab_podcast: 'Podcast',
   tab_search: 'Search',
+  tab_course: 'Course',
+  tab_packages: 'Packages',
+  tab_proof: 'Proof',
 
   // Home
   home_title: 'Home',

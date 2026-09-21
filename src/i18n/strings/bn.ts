@@ -7,6 +7,9 @@ export const BN = {
   tab_radio: 'রেডিও',
   tab_podcast: 'পডকাস্ট',
   tab_search: 'খোঁজ',
+  tab_course: 'কোর্স',
+  tab_packages: 'প্যাকেজ',
+  tab_proof: 'প্রমাণ',
 
   home_title: 'হোম',
   home_subtitle: 'দুবাই জব কোর্স, মাস্টারক্লাস এবং ক্যারিয়ার অডিও',

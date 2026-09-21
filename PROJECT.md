@@ -18,9 +18,7 @@ paid add-on packages, presented as a **premium podcast/masterclass app**.
 - **Design reference**: dark podcast app (near-black canvas, tonal cards, white
   primary actions, colorful concentric-ring artwork). Gold reserved for
   COMMERCE ONLY (price, badges, discount timer).
-- **Tabs**: Home, Radio, **Podcast (index — main tab)**, Search.
-  `packages` and `proof` tabs exist but are hidden from the tab bar
-  (`href: null`), reachable from Home.
+- **Tabs**: 3 tabs in bottom tab bar — **Course (index — main tab)**, **Packages**, **Proof**.
 - **Monetization**: Google Play In-App products via `expo-iap` (see §8).
 - **i18n**: 6 languages — English, Hindi, Sinhala, Tamil, Urdu, Bengali (§5).
 - **Login**: Google Sign-In with **demo-mode mock fallback** (§6).
@@ -71,15 +69,11 @@ src/
 │   ├── checkout/[productId].tsx # order summary + rating-beside-price + pending state
 │   ├── success.tsx              # celebratory confirmation
 │   └── (tabs)/
-│       ├── _layout.tsx          # 4 tabs (home/radio/podcast/search) + FloatingMiniPlayer + SocialProofHost
-│       ├── index.tsx            # PODCAST (main): top carousel, chapter tiles, mentors,
-│       │                        # curriculum accordion (25 steps/5 chapters/2 sections),
-│       │                        # progress strip, discount pill+modal, unlock bar
-│       ├── home.tsx             # links to packages/proof/language
-│       ├── radio.tsx            # simulated radio stations
-│       ├── search.tsx           # search over TOP_PODCASTS
-│       ├── packages.tsx         # add-on IAP cards (hidden tab)
-│       └── proof.tsx            # stats/reviews/gallery/timeline/hero story (hidden tab)
+│       ├── _layout.tsx          # 3 tabs (course/packages/proof) + FloatingMiniPlayer + SocialProofHost
+│       ├── index.tsx            # TAB 1 COURSE: 25 steps/5 chapters/2 sections, progress strip,
+│       │                        # discount pill+modal, unlock bar, chapter accordion, highlights
+│       ├── packages.tsx         # TAB 2 PACKAGES: add-on IAP cards (1-on-1, CV, Book, Q&A)
+│       └── proof.tsx            # TAB 3 PROOF: stats/reviews/gallery/timeline/hero story
 ├── components/
 │   ├── GoldButton.tsx           # white primary btn (dark variant = tonal/gold)
 │   ├── VideoRow.tsx             # localized lesson row: thumb + step + lock + done + expand
