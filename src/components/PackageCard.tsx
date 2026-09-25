@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Animated from 'react-native-reanimated';
 import { Colors, Type, Radii, Spacing } from '@/constants/theme';
 import { GoldButton } from './GoldButton';
 import type { CoursePackage } from '@/data/packages';
 import { useLocale } from '@/i18n/LocaleContext';
+import { AnimatedPressableScale, Transitions } from '@/constants/animations';
 
 interface Props {
   pkg: CoursePackage;
@@ -18,7 +20,7 @@ export function PackageCard({ pkg, owned, onBuy }: Props) {
   const shown = expanded ? pkg.bullets : pkg.bullets.slice(0, 2);
 
   return (
-    <View style={styles.card}>
+    <Animated.View layout={Transitions.layout} style={styles.card}>
       {pkg.badge && (
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{pkg.badge}</Text>
@@ -35,11 +37,16 @@ export function PackageCard({ pkg, owned, onBuy }: Props) {
         ))}
       </View>
       {pkg.bullets.length > 2 && (
-        <Pressable onPress={() => setExpanded((e) => !e)} hitSlop={8} style={styles.moreBtn}>
+        <AnimatedPressableScale
+          onPress={() => setExpanded((e) => !e)}
+          hitSlop={8}
+          scaleTo={0.98}
+          style={styles.moreBtn}
+        >
           <Text style={styles.moreText}>
             {expanded ? t('podcast_show_less') : t('packages_more_included', { n: pkg.bullets.length - 2 })}
           </Text>
-        </Pressable>
+        </AnimatedPressableScale>
       )}
       <View style={styles.footer}>
         <Text style={styles.price}>₹{pkg.priceInr.toLocaleString('en-IN')}</Text>
@@ -52,7 +59,7 @@ export function PackageCard({ pkg, owned, onBuy }: Props) {
           <GoldButton title={t('packages_get')} onPress={onBuy} style={styles.btn} />
         )}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 

@@ -20,6 +20,7 @@ import Animated, {
   FadeOut,
   LinearTransition,
 } from 'react-native-reanimated';
+import { AnimatedPressableScale, Transitions, Springs } from '@/constants/animations';
 import * as Haptics from 'expo-haptics';
 import { Colors, Type, Presets, Spacing, Radii } from '@/constants/theme';
 import { TOP_PODCASTS, CATEGORIES, AUTHORS, type PodcastItem } from '@/data/podcastData';
@@ -146,21 +147,21 @@ export default function MasterclassesTabScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <Animated.View entering={FadeInDown.duration(400).springify()} style={styles.headerRow}>
+        <Animated.View entering={Transitions.fadeDown(0)} style={styles.headerRow}>
           <Text style={styles.pageTitle}>{t('podcast_title')}</Text>
-          <Pressable
+          <AnimatedPressableScale
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
               router.push('/account');
             }}
             hitSlop={8}
+            scaleTo={0.92}
             style={styles.avatarBtn}>
             {auth.status === 'signed-in' && auth.photo ? (
               <Image source={{ uri: auth.photo }} style={styles.avatar} />
             ) : (
               <Ionicons name="person-circle-outline" size={32} color={Colors.muted} />
             )}
-          </Pressable>
+          </AnimatedPressableScale>
         </Animated.View>
 
         {/* Progress strip (real data) */}
@@ -257,7 +258,7 @@ export default function MasterclassesTabScreen() {
                 <View
                   style={[
                     styles.categoryIconWrap,
-                    { backgroundColor: `${cat.accentColor}1A`, borderColor: `${cat.accentColor}33` },
+                    { backgroundColor: `${cat.accentColor}1A` },
                   ]}>
                   <Ionicons name={cat.iconName} size={22} color={cat.accentColor} />
                 </View>
@@ -286,15 +287,16 @@ export default function MasterclassesTabScreen() {
           {(AUTHORS || []).map((author, index) => (
             <Animated.View
               key={author.id}
-              entering={FadeInRight.duration(400).delay(index * 60).springify()}
-              style={styles.authorCard}>
-              <Image source={{ uri: author.image }} style={styles.authorImage} />
-              <Text style={styles.authorName} numberOfLines={1}>
-                {author.name}
-              </Text>
-              <Text style={styles.authorRole} numberOfLines={1}>
-                {author.role}
-              </Text>
+              entering={Transitions.fadeRight(index * 60)}>
+              <AnimatedPressableScale scaleTo={0.94} style={styles.authorCard}>
+                <Image source={{ uri: author.image }} style={styles.authorImage} />
+                <Text style={styles.authorName} numberOfLines={1}>
+                  {author.name}
+                </Text>
+                <Text style={styles.authorRole} numberOfLines={1}>
+                  {author.role}
+                </Text>
+              </AnimatedPressableScale>
             </Animated.View>
           ))}
         </ScrollView>
@@ -327,17 +329,17 @@ export default function MasterclassesTabScreen() {
                     ? t('podcast_filter_s1', { n: 10 })
                     : t('podcast_filter_s2', { n: 15 });
               return (
-                <Pressable
+                <AnimatedPressableScale
                   key={sec}
+                  scaleTo={0.94}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
                     setSelectedSection(sec);
                   }}
                   style={[styles.filterPill, active && styles.filterPillActive]}>
                   <Text style={[styles.filterPillText, active && styles.filterPillTextActive]}>
                     {label}
                   </Text>
-                </Pressable>
+                </AnimatedPressableScale>
               );
             })}
           </ScrollView>
@@ -350,9 +352,12 @@ export default function MasterclassesTabScreen() {
               return (
                 <Animated.View
                   key={chapter.id}
-                  layout={LinearTransition.duration(200)}
+                  layout={Transitions.layout}
                   style={styles.chapterCard}>
-                  <Pressable onPress={() => toggleChapter(chapter.id)} style={styles.chapterHeader}>
+                  <AnimatedPressableScale
+                    scaleTo={0.98}
+                    onPress={() => toggleChapter(chapter.id)}
+                    style={styles.chapterHeader}>
                     <View style={styles.chapterMeta}>
                       <View style={styles.chapterTagRow}>
                         <View style={styles.chapterTag}>
@@ -373,12 +378,12 @@ export default function MasterclassesTabScreen() {
                       size={24}
                       color={isExpanded ? Colors.gold : Colors.muted}
                     />
-                  </Pressable>
+                  </AnimatedPressableScale>
 
                   {isExpanded && (
                     <Animated.View
-                      entering={FadeIn.duration(180)}
-                      exiting={FadeOut.duration(120)}
+                      entering={Transitions.fadeDown(0)}
+                      exiting={Transitions.fadeOut(140)}
                       style={styles.chapterLessonsWrap}>
                       {chapterLessons.map((v) => (
                         <VideoRow
@@ -545,7 +550,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 5,
-    borderWidth: 1,
   },
   categoryName: {
     ...Type.micro,
@@ -571,8 +575,6 @@ const styles = StyleSheet.create({
     height: 54,
     borderRadius: 27,
     marginBottom: 6,
-    borderWidth: 1.5,
-    borderColor: Colors.hairlineStrong,
   },
   authorName: {
     ...Type.micro,
@@ -615,8 +617,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: Radii.sm,
-    borderWidth: 1,
-    borderColor: Colors.goldBorder,
   },
   stepsBadgeText: {
     ...Type.caption,
@@ -649,8 +649,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceAlt,
     borderRadius: Radii.card,
     padding: 14,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
   },
   chapterHeader: {
     flexDirection: 'row',
@@ -702,8 +700,6 @@ const styles = StyleSheet.create({
   },
   chapterLessonsWrap: {
     marginTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: Colors.hairline,
     paddingTop: Spacing.md,
   },
   unlockBar: {
@@ -716,8 +712,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(30,31,37,0.97)',
     borderRadius: Radii.card,
     padding: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
   },
   unlockMeta: {
     flex: 1,

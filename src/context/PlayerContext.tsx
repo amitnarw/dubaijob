@@ -15,10 +15,12 @@ export interface PlayerTrack {
 interface PlayerContextType {
   currentTrack: PlayerTrack;
   isPlaying: boolean;
+  isVisible: boolean;
   progress: number;
   togglePlay: () => void;
   playTrack: (track: Partial<PlayerTrack>) => void;
   seekProgress: (val: number) => void;
+  closePlayer: () => void;
 }
 
 const DEFAULT_TRACK: PlayerTrack = {
@@ -39,10 +41,16 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [currentTrack, setCurrentTrack] = useState<PlayerTrack>(DEFAULT_TRACK);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
+  const [isVisible, setIsVisible] = useState<boolean>(true);
   const [progress, setProgress] = useState<number>(0.45);
 
   const togglePlay = () => {
     setIsPlaying((prev) => !prev);
+  };
+
+  const closePlayer = () => {
+    setIsVisible(false);
+    setIsPlaying(false);
   };
 
   const playTrack = (track: Partial<PlayerTrack>) => {
@@ -55,6 +63,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({
       theme: track.theme || 'teal',
       badgeText: track.badgeText || track.title || 'Live',
     }));
+    setIsVisible(true);
     setIsPlaying(true);
     setProgress(0.15);
   };
@@ -80,10 +89,12 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         currentTrack,
         isPlaying,
+        isVisible,
         progress,
         togglePlay,
         playTrack,
         seekProgress,
+        closePlayer,
       }}
     >
       {children}

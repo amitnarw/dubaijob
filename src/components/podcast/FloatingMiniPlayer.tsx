@@ -2,8 +2,10 @@ import React, { useEffect } from 'react';
 import { StyleSheet, View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { BlurView } from 'expo-blur';
 import Animated, {
   FadeInUp,
+  FadeOutDown,
   useSharedValue,
   useAnimatedStyle,
   withSpring,
@@ -17,14 +19,16 @@ import { ConcentricArtwork } from './ConcentricArtwork';
 
 interface FloatingMiniPlayerProps {
   bottomOffset?: number;
+  blurTarget?: React.RefObject<View | null>;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   bottomOffset = 80,
+  blurTarget,
 }) => {
-  const { currentTrack, isPlaying, progress, togglePlay } = usePlayer();
+  const { currentTrack, isPlaying, isVisible, progress, togglePlay, closePlayer } = usePlayer();
   const playScale = useSharedValue(1);
   const pulseScale = useSharedValue(1);
 
@@ -39,7 +43,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     } else {
       pulseScale.value = withSpring(1);
     }
-  }, [isPlaying]);
+  }, [isPlaying, pulseScale]);
 
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
@@ -59,7 +63,8 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     }
   };
 
-  const handleToggle = () => {
+  const handleToggle = (e: any) => {
+    e.stopPropagation?.();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     playScale.value = withSpring(0.85, { damping: 14, stiffness: 400 });
     setTimeout(() => {
@@ -68,55 +73,75 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
     togglePlay();
   };
 
+  const handleDismiss = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    closePlayer();
+  };
+
+  if (!isVisible) return null;
+
   return (
     <Animated.View
-      entering={FadeInUp.duration(350)}
+      entering={FadeInUp.duration(300)}
+      exiting={FadeOutDown.duration(200)}
       style={[styles.floatingWrapper, { bottom: bottomOffset }]}
     >
-      <Pressable onPress={handleOpenVideo} style={styles.container}>
-        {/* Left Artwork Thumbnail with subtle speaker badge */}
-        <Animated.View style={pulseStyle}>
-          <ConcentricArtwork
-            size={44}
-            theme={currentTrack.theme || 'blue'}
-            borderRadius={12}
-            showSpeakerBadge={true}
-          />
-        </Animated.View>
-
-        {/* Center Track Info & Slim Progress Bar */}
-        <View style={styles.centerInfo}>
-          <Text style={styles.title} numberOfLines={1}>
-            {currentTrack.title}
-          </Text>
-          <Text style={styles.subtitle} numberOfLines={1}>
-            {currentTrack.episode}
-          </Text>
-
-          {/* Scrubber Progress Bar directly below subtitle */}
-          <View style={styles.progressTrack}>
-            <View
-              style={[
-                styles.progressFill,
-                { width: `${Math.min(100, Math.max(5, progress * 100))}%` },
-              ]}
-            />
-          </View>
-        </View>
-
-        {/* Right Play/Pause Button: Pure white circle with pitch black icon */}
-        <AnimatedPressable
-          onPress={handleToggle}
-          hitSlop={8}
-          style={[styles.playButton, playBtnStyle]}
+      <Pressable
+        onPress={handleOpenVideo}
+        onLongPress={handleDismiss}
+        style={styles.container}
+      >
+        <BlurView
+          blurTarget={blurTarget}
+          intensity={85}
+          tint="dark"
+          blurMethod={blurTarget ? 'dimezisBlurView' : 'none'}
+          style={styles.blurContainer}
         >
-          <Ionicons
-            name={isPlaying ? 'pause' : 'play'}
-            size={16}
-            color="#000000"
-            style={isPlaying ? {} : { marginLeft: 2 }}
-          />
-        </AnimatedPressable>
+          {/* Left Artwork Thumbnail (bigger, rounded) with speaker badge */}
+          <Animated.View style={pulseStyle}>
+            <ConcentricArtwork
+              size={52}
+              theme={currentTrack.theme || 'blue'}
+              borderRadius={14}
+              showSpeakerBadge={true}
+            />
+          </Animated.View>
+
+          {/* Center Track Info & Slim Progress Bar */}
+          <View style={styles.centerInfo}>
+            <Text style={styles.title} numberOfLines={1}>
+              {currentTrack.title}
+            </Text>
+            <Text style={styles.subtitle} numberOfLines={1}>
+              {currentTrack.episode}
+            </Text>
+
+            {/* Scrubber Progress Bar directly below subtitle */}
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${Math.min(100, Math.max(5, progress * 100))}%` },
+                ]}
+              />
+            </View>
+          </View>
+
+          {/* Right Play/Pause Button: Large white circular button */}
+          <AnimatedPressable
+            onPress={handleToggle}
+            hitSlop={8}
+            style={[styles.playButton, playBtnStyle]}
+          >
+            <Ionicons
+              name={isPlaying ? 'pause' : 'play'}
+              size={20}
+              color="#000000"
+              style={isPlaying ? {} : { marginLeft: 2 }}
+            />
+          </AnimatedPressable>
+        </BlurView>
       </Pressable>
     </Animated.View>
   );
@@ -125,48 +150,50 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
 const styles = StyleSheet.create({
   floatingWrapper: {
     position: 'absolute',
-    left: 14,
-    right: 14,
+    left: 12,
+    right: 12,
     zIndex: 99,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 10,
   },
   container: {
-    height: 62,
-    backgroundColor: '#1D1E24',
-    borderRadius: 20,
+    height: 72,
+    borderRadius: 22,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(28, 29, 36, 0.72)',
+  },
+  blurContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 14,
-    elevation: 8,
+    paddingHorizontal: 12,
   },
   centerInfo: {
     flex: 1,
-    marginLeft: 12,
-    marginRight: 10,
+    marginLeft: 14,
+    marginRight: 14,
     justifyContent: 'center',
   },
   title: {
     color: '#FFFFFF',
-    fontSize: 13.5,
+    fontSize: 15,
     fontFamily: 'Inter-Bold',
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
   subtitle: {
     color: '#8E8E98',
-    fontSize: 11.5,
+    fontSize: 12,
     fontFamily: 'Inter-Regular',
-    marginTop: 1,
+    marginTop: 2,
   },
   progressTrack: {
-    height: 3,
+    height: 3.5,
     backgroundColor: '#35363F',
     borderRadius: 2,
-    marginTop: 6,
+    marginTop: 8,
     overflow: 'hidden',
     width: '100%',
   },
@@ -176,9 +203,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   playButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
@@ -186,6 +213,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 4,
   },
 });

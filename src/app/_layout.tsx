@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
 import { Colors } from '@/constants/theme';
 import { loadAppFonts } from '@/services/fontService';
@@ -60,15 +61,17 @@ function Gate() {
 
 export default function RootLayout() {
   return (
-    <LocaleProvider>
-      <AuthProvider>
-        <PurchaseProvider>
-          <PlayerProvider>
-            <StatusBar style="light" />
-            <Gate />
-          </PlayerProvider>
-        </PurchaseProvider>
-      </AuthProvider>
-    </LocaleProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <LocaleProvider>
+        <AuthProvider>
+          <PurchaseProvider>
+            <PlayerProvider>
+              <StatusBar style="light" />
+              <Gate />
+            </PlayerProvider>
+          </PurchaseProvider>
+        </AuthProvider>
+      </LocaleProvider>
+    </GestureHandlerRootView>
   );
 }

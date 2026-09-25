@@ -26,6 +26,7 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Colors, Radii } from '@/constants/theme';
+import { AnimatedPressableScale } from '@/constants/animations';
 
 interface CustomVideoPlayerProps {
   videoId: string;
@@ -645,39 +646,64 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
               </Text>
             </View>
 
-            <Pressable onPress={cycleSpeed} hitSlop={10} style={styles.speedPill}>
+            <AnimatedPressableScale
+              scaleTo={0.92}
+              onPress={cycleSpeed}
+              hitSlop={10}
+              style={styles.speedPill}
+            >
               <Text style={styles.speedPillText}>{SPEEDS[speedIndex]}x</Text>
-            </Pressable>
+            </AnimatedPressableScale>
             <View style={{ width: 8 }} />
-            <Pressable onPress={isFullscreen ? exitFullscreen : enterFullscreen} hitSlop={10} style={styles.iconBtn}>
+            <AnimatedPressableScale
+              scaleTo={0.9}
+              onPress={isFullscreen ? exitFullscreen : enterFullscreen}
+              hitSlop={10}
+              style={styles.iconBtn}
+            >
               <Ionicons
                 name={isFullscreen ? 'contract-outline' : 'expand-outline'}
                 size={22}
                 color="#FFFFFF"
               />
-            </Pressable>
+            </AnimatedPressableScale>
           </View>
 
           {/* Center controls */}
           <View style={styles.centerControls} pointerEvents="box-none">
-            <Pressable onPress={() => skipSeconds(-10)} hitSlop={12} style={styles.secondaryBtn}>
+            <AnimatedPressableScale
+              scaleTo={0.9}
+              onPress={() => skipSeconds(-10)}
+              hitSlop={12}
+              style={styles.secondaryBtn}
+            >
               <Ionicons name="play-back" size={20} color="#FFFFFF" />
               <Text style={styles.secondaryBtnText}>10s</Text>
-            </Pressable>
+            </AnimatedPressableScale>
 
-            <Pressable onPress={togglePlay} hitSlop={12} style={styles.heroPlayBtn}>
+            <AnimatedPressableScale
+              scaleTo={0.88}
+              onPress={togglePlay}
+              hitSlop={12}
+              style={styles.heroPlayBtn}
+            >
               <Ionicons
                 name={isPlaying ? 'pause' : 'play'}
                 size={34}
                 color="#000"
                 style={isPlaying ? {} : { marginLeft: 4 }}
               />
-            </Pressable>
+            </AnimatedPressableScale>
 
-            <Pressable onPress={() => skipSeconds(10)} hitSlop={12} style={styles.secondaryBtn}>
+            <AnimatedPressableScale
+              scaleTo={0.9}
+              onPress={() => skipSeconds(10)}
+              hitSlop={12}
+              style={styles.secondaryBtn}
+            >
               <Ionicons name="play-forward" size={20} color="#FFFFFF" />
               <Text style={styles.secondaryBtnText}>10s</Text>
-            </Pressable>
+            </AnimatedPressableScale>
           </View>
 
           {/* Bottom bar */}
@@ -827,8 +853,6 @@ const styles = StyleSheet.create({
     height: 130,
     borderRadius: 65,
     backgroundColor: 'rgba(0,0,0,0.55)',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.4)',
   },
   rippleText: {
     color: '#FFFFFF',
@@ -872,8 +896,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
     backgroundColor: 'rgba(0,0,0,0.55)',
-    borderWidth: 1,
-    borderColor: 'rgba(230,184,0,0.45)',
   },
   speedPillText: {
     color: Colors.gold,
@@ -892,8 +914,6 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     backgroundColor: 'rgba(0,0,0,0.55)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -953,8 +973,6 @@ const styles = StyleSheet.create({
     height: 14,
     borderRadius: 7,
     backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: Colors.gold,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.45,

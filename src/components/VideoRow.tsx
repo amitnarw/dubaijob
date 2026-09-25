@@ -1,10 +1,16 @@
 import { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
 import { Colors, Type, Presets, Spacing, Radii } from '@/constants/theme';
 import { type CourseVideo } from '@/data/courseVideos';
 import { useLocale } from '@/i18n/LocaleContext';
 import { thumbnailUrl } from '@/services/youtubeService';
+import { AnimatedPressableScale, Transitions, Springs } from '@/constants/animations';
 
 interface Props {
   video: CourseVideo;
@@ -20,9 +26,21 @@ export function VideoRow({ video, index, locked, done, onPress }: Props) {
   const { lang, t } = useLocale();
   const localizedTitle = video.title[lang] ?? video.title.en;
 
+  const chevronRotation = useSharedValue(0);
+
+  const toggleExpand = () => {
+    const next = !expanded;
+    setExpanded(next);
+    chevronRotation.value = withSpring(next ? 180 : 0, Springs.snappy);
+  };
+
+  const chevronAnim = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${chevronRotation.value}deg` }],
+  }));
+
   return (
-    <View style={styles.card}>
-      <Pressable onPress={onPress} style={styles.main}>
+    <Animated.View layout={Transitions.layout} style={styles.card}>
+      <AnimatedPressableScale onPress={onPress} scaleTo={0.98} style={styles.main}>
         <View style={styles.thumbWrap}>
           {thumbFailed ? (
             <View style={[styles.thumb, styles.thumbFallback]}>
@@ -65,17 +83,23 @@ export function VideoRow({ video, index, locked, done, onPress }: Props) {
           </Text>
         </View>
         <Ionicons name="chevron-forward" size={20} color={Colors.faint} />
-      </Pressable>
-      <Pressable onPress={() => setExpanded((e) => !e)} style={styles.moreBtn} hitSlop={8}>
+      </AnimatedPressableScale>
+      <Pressable onPress={toggleExpand} style={styles.moreBtn} hitSlop={8}>
         <Text style={styles.moreText}>{expanded ? t('podcast_show_less') : t('podcast_show_more')}</Text>
-        <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.gold} />
+        <Animated.View style={chevronAnim}>
+          <Ionicons name="chevron-down" size={14} color={Colors.gold} />
+        </Animated.View>
       </Pressable>
       {expanded && (
-        <View style={styles.expandedBox}>
+        <Animated.View
+          entering={Transitions.fadeDown(0)}
+          exiting={Transitions.fadeOut(120)}
+          style={styles.expandedBox}
+        >
           <Text style={styles.desc}>{video.description}</Text>
-        </View>
+        </Animated.View>
       )}
-    </View>
+    </Animated.View>
   );
 }
 

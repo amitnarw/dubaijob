@@ -103,7 +103,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   optionActive: {
-    borderColor: Colors.goldBorder,
     backgroundColor: Colors.goldTint,
   },
   native: {

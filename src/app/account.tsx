@@ -262,12 +262,9 @@ const styles = StyleSheet.create({
     borderRadius: Radii.md,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
   },
   langChipActive: {
     backgroundColor: '#FFFFFF',
-    borderColor: '#FFFFFF',
   },
   langChipText: {
     ...Type.small,

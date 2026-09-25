@@ -3,6 +3,8 @@ import * as Haptics from 'expo-haptics';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Colors, Type, Radii } from '@/constants/theme';
 
+import { Springs } from '@/constants/animations';
+
 interface Props {
   title: string;
   onPress: () => void;
@@ -18,25 +20,42 @@ export function GoldButton({ title, onPress, disabled, style, dark }: Props) {
   const scale = useSharedValue(1);
   const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
-  const press = () => {
+  const handlePressIn = () => {
     if (disabled) return;
-    scale.value = withSpring(0.97, { damping: 15, stiffness: 400 });
-    setTimeout(() => {
-      scale.value = withSpring(1, { damping: 15, stiffness: 400 });
-    }, 80);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    scale.value = withSpring(0.96, Springs.snappy);
+  };
+
+  const handlePressOut = () => {
+    if (disabled) return;
+    scale.value = withSpring(1, Springs.bouncy);
+  };
+
+  const handlePress = () => {
+    if (disabled) return;
     onPress();
   };
 
   if (dark) {
     return (
-      <AnimatedPressable onPress={press} style={[styles.dark, disabled && styles.disabled, style, anim]}>
+      <AnimatedPressable
+        onPress={handlePress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={[styles.dark, disabled && styles.disabled, style, anim]}
+      >
         <Text style={styles.darkText}>{title}</Text>
       </AnimatedPressable>
     );
   }
 
   return (
-    <AnimatedPressable onPress={press} style={[styles.primary, disabled && styles.disabled, style, anim]}>
+    <AnimatedPressable
+      onPress={handlePress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={[styles.primary, disabled && styles.disabled, style, anim]}
+    >
       <Text style={styles.primaryText}>{title}</Text>
     </AnimatedPressable>
   );

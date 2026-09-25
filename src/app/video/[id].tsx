@@ -11,6 +11,7 @@ import { useLocale } from '@/i18n/LocaleContext';
 import { markDone } from '@/services/courseService';
 import { ToastControl } from '@/services/toastControl';
 import { thumbnailUrl } from '@/services/youtubeService';
+import { AnimatedPressableScale } from '@/constants/animations';
 
 export default function VideoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -115,7 +116,8 @@ export default function VideoScreen() {
         {/* Next / Previous Lesson Navigation Strip */}
         <View style={styles.navRow}>
           {prevVideo ? (
-            <Pressable
+            <AnimatedPressableScale
+              scaleTo={0.96}
               onPress={() => router.replace(`/video/${prevVideo.id}`)}
               style={styles.navCard}
             >
@@ -126,13 +128,14 @@ export default function VideoScreen() {
                   Step {prevVideo.stepNumber}
                 </Text>
               </View>
-            </Pressable>
+            </AnimatedPressableScale>
           ) : (
             <View style={styles.navCardPlaceholder} />
           )}
 
           {nextVideo ? (
-            <Pressable
+            <AnimatedPressableScale
+              scaleTo={0.96}
               onPress={() => router.replace(`/video/${nextVideo.id}`)}
               style={[styles.navCard, styles.navCardNext]}
             >
@@ -143,7 +146,7 @@ export default function VideoScreen() {
                 </Text>
               </View>
               <Ionicons name="arrow-forward" size={16} color={Colors.gold} />
-            </Pressable>
+            </AnimatedPressableScale>
           ) : (
             <View style={styles.navCardPlaceholder} />
           )}
@@ -165,8 +168,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screen,
     paddingTop: 50,
     paddingBottom: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
   },
   back: {
     width: 40,
@@ -207,8 +208,6 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 6,
     backgroundColor: 'rgba(230, 184, 0, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(230, 184, 0, 0.4)',
   },
   stepPillText: {
     color: Colors.gold,
@@ -256,8 +255,6 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: Spacing.lg,
     paddingTop: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
   },
   navCard: {
     flex: 1,
@@ -267,11 +264,8 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: Radii.md,
     backgroundColor: Colors.elevated,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   navCardNext: {
-    borderColor: 'rgba(230, 184, 0, 0.25)',
     backgroundColor: 'rgba(230, 184, 0, 0.05)',
   },
   navCardPlaceholder: {

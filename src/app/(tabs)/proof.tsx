@@ -11,6 +11,9 @@ import { StatBand } from '@/components/StatBand';
 import { useLocale } from '@/i18n/LocaleContext';
 import { noteTabFocus } from '@/services/tabFocus';
 
+import Animated from 'react-native-reanimated';
+import { Transitions } from '@/constants/animations';
+
 const W = Dimensions.get('window').width;
 
 export default function ProofTab() {
@@ -25,29 +28,39 @@ export default function ProofTab() {
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={styles.hero}>{t('proof_hero')}</Text>
+        <Animated.View entering={Transitions.fadeDown(0)}>
+          <Text style={styles.hero}>{t('proof_hero')}</Text>
+        </Animated.View>
 
-        <StatBand
-          stats={[
-            { value: `${STATS.students.toLocaleString('en-IN')}+`, label: t('proof_students') },
-            { value: `${STATS.rating}★`, label: `${t('proof_rating')} · ${STATS.reviewCount.toLocaleString('en-IN')} ${t('proof_reviews_suffix')}` },
-            { value: `${STATS.years}+`, label: t('proof_years') },
-          ]}
-        />
+        <Animated.View entering={Transitions.fadeDown(60)}>
+          <StatBand
+            stats={[
+              { value: `${STATS.students.toLocaleString('en-IN')}+`, label: t('proof_students') },
+              { value: `${STATS.rating}★`, label: `${t('proof_rating')} · ${STATS.reviewCount.toLocaleString('en-IN')} ${t('proof_reviews_suffix')}` },
+              { value: `${STATS.years}+`, label: t('proof_years') },
+            ]}
+          />
+        </Animated.View>
 
-        <Text style={styles.section}>{t('proof_section_reviews')}</Text>
-        {REVIEWS.map((r) => (
-          <ReviewCard key={r.id} review={r} />
+        <Animated.View entering={Transitions.fadeDown(100)}>
+          <Text style={styles.section}>{t('proof_section_reviews')}</Text>
+        </Animated.View>
+        {REVIEWS.map((r, index) => (
+          <Animated.View key={r.id} entering={Transitions.fadeDown(index * 60)}>
+            <ReviewCard review={r} />
+          </Animated.View>
         ))}
 
-        <Text style={styles.section}>{t('proof_section_moments')}</Text>
+        <Animated.View entering={Transitions.fadeDown(140)}>
+          <Text style={styles.section}>{t('proof_section_moments')}</Text>
+        </Animated.View>
         <ScrollView
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.gallery}>
-          {SUCCESS_IMAGES.map((s) => (
-            <View key={s.id} style={styles.slide}>
+          {SUCCESS_IMAGES.map((s, index) => (
+            <Animated.View key={s.id} entering={Transitions.fadeRight(index * 70)} style={styles.slide}>
               {s.image ? (
                 <Image source={{ uri: s.image }} style={styles.slideImg} />
               ) : (
@@ -56,7 +69,7 @@ export default function ProofTab() {
                 </View>
               )}
               <Text style={styles.caption}>{s.caption}</Text>
-            </View>
+            </Animated.View>
           ))}
         </ScrollView>
 

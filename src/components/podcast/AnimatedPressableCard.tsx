@@ -7,6 +7,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
+import { Springs } from '@/constants/animations';
+
 interface AnimatedPressableCardProps {
   onPress?: () => void;
   children: React.ReactNode;
@@ -31,22 +33,14 @@ export const AnimatedPressableCard: React.FC<AnimatedPressableCardProps> = ({
   }));
 
   const handlePressIn = () => {
-    scale.value = withSpring(scaleTo, {
-      damping: 14,
-      stiffness: 380,
-      mass: 0.8,
-    });
+    scale.value = withSpring(scaleTo, Springs.snappy);
     if (haptic) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     }
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1, {
-      damping: 14,
-      stiffness: 380,
-      mass: 0.8,
-    });
+    scale.value = withSpring(1, Springs.bouncy);
   };
 
   return (

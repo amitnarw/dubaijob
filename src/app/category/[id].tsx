@@ -1,4 +1,5 @@
 import React from 'react';
+import { useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,6 +8,7 @@ import {
   Pressable,
   useWindowDimensions,
 } from 'react-native';
+import { BlurTargetView } from 'expo-blur';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +26,7 @@ export default function CategoryDetailScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { playTrack } = usePlayer();
+  const blurTargetRef = useRef<View | null>(null);
 
   const categoryId = typeof id === 'string' ? id.toLowerCase() : 'basics';
   const categoryData = CATEGORY_DETAILS[categoryId] || CATEGORY_DETAILS.basics;
@@ -87,6 +90,7 @@ export default function CategoryDetailScreen() {
         />
       </View>
 
+      <BlurTargetView ref={blurTargetRef} style={{ flex: 1 }}>
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -168,9 +172,13 @@ export default function CategoryDetailScreen() {
           ))}
         </View>
       </ScrollView>
+      </BlurTargetView>
 
       {/* Persistent Floating Mini-Player docked at the bottom */}
-      <FloatingMiniPlayer bottomOffset={Math.max(insets.bottom, 16) + 12} />
+      <FloatingMiniPlayer
+        bottomOffset={Math.max(insets.bottom, 16) + 12}
+        blurTarget={blurTargetRef}
+      />
     </View>
   );
 }
@@ -215,8 +223,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,

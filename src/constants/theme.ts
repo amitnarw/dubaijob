@@ -29,15 +29,15 @@ export const Colors = {
   goldLight: '#F5D97A',
   goldDeep: '#B8860B',
   goldTint: 'rgba(212,175,55,0.15)',
-  goldBorder: 'rgba(212,175,55,0.3)',
+  goldBorder: 'transparent',
 
   // Status
   success: '#34D399',
   danger: '#FF6B6B',
 
-  // Hairline strokes (the ONLY borders allowed — 5-6% white)
-  hairline: 'rgba(255,255,255,0.05)',
-  hairlineStrong: 'rgba(255,255,255,0.1)',
+  // Hairline strokes (borders removed across the whole app)
+  hairline: 'transparent',
+  hairlineStrong: 'transparent',
 
   // Artwork accent set (ConcentricArtwork themes, category tiles)
   peach: '#FF6F61',
@@ -172,29 +172,22 @@ export const Presets = StyleSheet.create({
   card: {
     backgroundColor: Colors.surface,
     borderRadius: Radii.card,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
   },
   // Small square tile (category)
   tile: {
     backgroundColor: Colors.surface,
     borderRadius: Radii.card,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
   },
   // Idle filter pill
   pill: {
     backgroundColor: Colors.surface,
     borderRadius: Radii.md,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
     paddingVertical: 8,
     paddingHorizontal: 14,
   },
   // Active filter pill (white fill, black text)
   pillActive: {
     backgroundColor: '#FFFFFF',
-    borderColor: '#FFFFFF',
   },
   // Text input
   input: {
