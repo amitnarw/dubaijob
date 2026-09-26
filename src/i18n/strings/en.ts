@@ -50,6 +50,27 @@ export const EN = {
   course_completed: 'Completed',
   course_note_nonhindi: 'Videos are in Hindi — on-screen steps are easy to follow in any language.',
 
+  // Home hero (adaptive: buyer vs new user)
+  hero_continue_kicker: 'Continue learning · {pct}%',
+  hero_continue_cta: 'Continue Step {n}',
+  hero_free_kicker: 'Start free — no payment',
+  hero_free_title: 'Watch Step 1 free',
+  hero_free_sub: 'See exactly how this course gets you hired in Dubai.',
+  hero_free_cta: 'Watch Free Lesson',
+
+  // Lessons list
+  lessons_title: 'All 25 Lessons',
+  lessons_sub: '{done} of {total} complete',
+  continue_title: 'Continue Watching',
+  resume_step: 'Resume · Step {n}',
+  course_preview: 'Course Preview',
+  free_videos: '{n} Free Videos',
+  lessons_chip: '{n} Lessons',
+  total_time: '{t} total',
+  filter_all: 'All',
+  home_pkg_banner: 'Most students add 1-on-1 guidance before their Dubai trip',
+  home_pkg_cta: 'Add to my plan',
+
   // Unlock / purchase
   unlock_bar_title: 'Unlock Full Course',
   unlock_bar_sub: '{rating}★ · {reviews} reviews · {price}',
@@ -60,6 +81,9 @@ export const EN = {
   checkout_secured: 'Secured by Google Play · one-time payment',
   checkout_unavailable: 'Play Store products unavailable right now. Please try later.',
   checkout_pending: 'Payment pending — access unlocks automatically.',
+  checkout_b1: 'All 25 video lessons, lifetime access',
+  checkout_b2: 'Dubai CV templates + portal guides',
+  checkout_b3: 'Free updates forever',
   checkout_not_found: 'Product not found',
   checkout_back: 'Go back',
   success_title: "You're in!",
@@ -103,6 +127,7 @@ export const EN = {
   login_field_address: 'Address',
   login_field_city: 'City',
   login_field_pin: 'PIN code',
+  login_step2: 'Step 2 of 2 — almost there',
   login_ph_name: 'Your name',
   login_ph_phone: '10-digit mobile number',
   login_ph_address: 'House / street / area',
@@ -124,6 +149,11 @@ export const EN = {
   account_goto_login: 'Go to login',
   account_saved: 'Profile saved.',
   account_save_fail: 'Save failed — check connection.',
+  account_menu_profile: 'Profile',
+  account_menu_profile_sub: 'Name, phone, address',
+  account_menu_language: 'Language',
+  account_menu_purchases: 'My purchases',
+  account_signout_confirm: 'Tap again to sign out',
 
   // Radio
   radio_title: 'Radio',
@@ -152,8 +182,12 @@ export const EN = {
   proof_years: 'Years running',
   proof_reviews_suffix: 'reviews',
   proof_section_reviews: 'Student reviews',
+  proof_section_videos: 'Watch their stories',
   proof_section_moments: 'Success moments',
   proof_section_journey: 'Our journey',
+  proof_journey_more: 'Read the full journey',
+  proof_journey_less: 'Show less',
+  proof_watch_story: "Watch {name}'s story",
   proof_cta: 'Start My Journey',
 
   // Packages

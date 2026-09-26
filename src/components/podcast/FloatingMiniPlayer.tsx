@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { StyleSheet, View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { BlurView } from 'expo-blur';
 import Animated, {
   FadeInUp,
   FadeOutDown,
@@ -16,17 +15,16 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import { usePlayer } from '@/context/PlayerContext';
 import { ConcentricArtwork } from './ConcentricArtwork';
+import { Colors } from '@/constants/theme';
 
 interface FloatingMiniPlayerProps {
   bottomOffset?: number;
-  blurTarget?: React.RefObject<View | null>;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
   bottomOffset = 80,
-  blurTarget,
 }) => {
   const { currentTrack, isPlaying, isVisible, progress, togglePlay, closePlayer } = usePlayer();
   const playScale = useSharedValue(1);
@@ -91,19 +89,15 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
         onLongPress={handleDismiss}
         style={styles.container}
       >
-        <BlurView
-          blurTarget={blurTarget}
-          intensity={85}
-          tint="dark"
-          blurMethod={blurTarget ? 'dimezisBlurView' : 'none'}
-          style={styles.blurContainer}
+        <View
+          style={styles.inner}
         >
           {/* Left Artwork Thumbnail (bigger, rounded) with speaker badge */}
           <Animated.View style={pulseStyle}>
             <ConcentricArtwork
-              size={52}
+              size={44}
               theme={currentTrack.theme || 'blue'}
-              borderRadius={14}
+              borderRadius={10}
               showSpeakerBadge={true}
             />
           </Animated.View>
@@ -141,7 +135,7 @@ export const FloatingMiniPlayer: React.FC<FloatingMiniPlayerProps> = ({
               style={isPlaying ? {} : { marginLeft: 2 }}
             />
           </AnimatedPressable>
-        </BlurView>
+        </View>
       </Pressable>
     </Animated.View>
   );
@@ -153,19 +147,14 @@ const styles = StyleSheet.create({
     left: 12,
     right: 12,
     zIndex: 99,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 10,
   },
   container: {
-    height: 72,
-    borderRadius: 22,
+    height: 64,
+    borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: 'rgba(28, 29, 36, 0.72)',
+    backgroundColor: Colors.elevated,
   },
-  blurContainer: {
+  inner: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -173,8 +162,8 @@ const styles = StyleSheet.create({
   },
   centerInfo: {
     flex: 1,
-    marginLeft: 14,
-    marginRight: 14,
+    marginLeft: 12,
+    marginRight: 12,
     justifyContent: 'center',
   },
   title: {
@@ -190,10 +179,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   progressTrack: {
-    height: 3.5,
+    height: 3,
     backgroundColor: '#35363F',
     borderRadius: 2,
-    marginTop: 8,
+    marginTop: 6,
     overflow: 'hidden',
     width: '100%',
   },
@@ -209,10 +198,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 4,
   },
 });

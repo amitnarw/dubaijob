@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,11 +7,22 @@ import * as Haptics from 'expo-haptics';
 import { Colors, Type, Spacing } from '@/constants/theme';
 import { GoldButton } from '@/components/GoldButton';
 import { useLocale } from '@/i18n/LocaleContext';
+import { COURSE_VIDEOS } from '@/data/courseVideos';
+import { getProgress, type ProgressMap } from '@/services/courseService';
 
-/** Celebratory purchase confirmation (Peak-End peak). */
+/** Celebratory purchase confirmation (Peak-End peak) → one action: start. */
 export default function SuccessScreen() {
   const { t } = useLocale();
-  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+  const [progress, setProgress] = useState<ProgressMap | null>(null);
+
+  useEffect(() => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    getProgress().then(setProgress).catch(() => setProgress({}));
+  }, []);
+
+  const nextVideo =
+    (progress && COURSE_VIDEOS.find((v) => !progress[v.id])) || COURSE_VIDEOS[0];
+
   return (
     <View style={styles.root}>
       <Animated.View entering={BounceIn.duration(600)} style={styles.badge}>
@@ -18,8 +30,13 @@ export default function SuccessScreen() {
       </Animated.View>
       <Text style={styles.title}>{t('success_title')}</Text>
       <Text style={styles.sub}>{t('success_sub')}</Text>
-      <GoldButton title={t('success_cta')} onPress={() => router.replace('/(tabs)')} style={styles.cta} />
-      <GoldButton title={t('success_next')} dark onPress={() => router.replace('/(tabs)/proof')} />
+      <GoldButton
+        title={t('success_cta')}
+        onPress={() =>
+          router.replace({ pathname: '/video/[id]', params: { id: nextVideo.id } })
+        }
+        style={styles.cta}
+      />
     </View>
   );
 }

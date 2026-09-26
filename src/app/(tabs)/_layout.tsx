@@ -11,7 +11,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSegments } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurTargetView } from 'expo-blur';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -19,6 +18,8 @@ import Animated, {
   useAnimatedScrollHandler,
   useDerivedValue,
   interpolateColor,
+  withRepeat,
+  withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -27,6 +28,7 @@ import { FloatingMiniPlayer } from '@/components/podcast/FloatingMiniPlayer';
 import { SocialProofHost } from '@/components/SocialProofHost';
 import { Colors } from '@/constants/theme';
 import { useLocale } from '@/i18n/LocaleContext';
+import { usePlayer } from '@/context/PlayerContext';
 import { noteTabFocus } from '@/services/tabFocus';
 
 import MasterclassesTabScreen from './index';
@@ -34,7 +36,7 @@ import PackagesTab from './packages';
 import ProofTab from './proof';
 
 // ── Tab items configuration ──────────────────────────────────────────────────
-type TabLabelKey = 'tab_course' | 'tab_packages' | 'tab_proof';
+type TabLabelKey = 'tab_home' | 'tab_packages' | 'tab_proof';
 
 interface TabConfig {
   name: string;
@@ -49,12 +51,11 @@ interface TabConfig {
 const TAB_CONFIGS: TabConfig[] = [
   {
     name: 'index',
-    labelKey: 'tab_course',
-    activeIcon: 'play',
-    inactiveIcon: 'play-circle-outline',
+    labelKey: 'tab_home',
+    activeIcon: 'home',
+    inactiveIcon: 'home-outline',
     activeSize: 15,
     inactiveSize: 22,
-    activeOffset: { marginLeft: 2 },
   },
   {
     name: 'packages',
@@ -76,6 +77,40 @@ const TAB_CONFIGS: TabConfig[] = [
 
 const CIRCLE_SIZE = 28;
 
+// ── Mini equalizer pin: bounces while a lesson plays, rests when paused ───
+type EqState = 'playing' | 'paused' | 'hidden';
+
+function EqBars({ state }: { state: EqState }) {
+  const b1 = useSharedValue(0.5);
+  const b2 = useSharedValue(0.8);
+  const b3 = useSharedValue(0.3);
+
+  useEffect(() => {
+    if (state === 'playing') {
+      b1.value = withRepeat(withTiming(1, { duration: 380 }), -1, true);
+      b2.value = withRepeat(withTiming(1, { duration: 520 }), -1, true);
+      b3.value = withRepeat(withTiming(1, { duration: 450 }), -1, true);
+    } else {
+      b1.value = withTiming(0.5, { duration: 200 });
+      b2.value = withTiming(0.5, { duration: 200 });
+      b3.value = withTiming(0.5, { duration: 200 });
+    }
+  }, [state, b1, b2, b3]);
+
+  const s1 = useAnimatedStyle(() => ({ height: 3 + b1.value * 9 }));
+  const s2 = useAnimatedStyle(() => ({ height: 3 + b2.value * 9 }));
+  const s3 = useAnimatedStyle(() => ({ height: 3 + b3.value * 9 }));
+
+  if (state === 'hidden') return null;
+  return (
+    <View style={styles.eq}>
+      <Animated.View style={[styles.eqBar, s1]} />
+      <Animated.View style={[styles.eqBar, s2]} />
+      <Animated.View style={[styles.eqBar, s3]} />
+    </View>
+  );
+}
+
 // ── Individual Tab Item in Bottom Navbar ────────────────────────────────────
 function RealTabBarItem({
   config,
@@ -83,12 +118,14 @@ function RealTabBarItem({
   scrollX,
   width,
   onPress,
+  eq,
 }: {
   config: TabConfig;
   index: number;
   scrollX: SharedValue<number>;
   width: number;
   onPress: () => void;
+  eq: EqState;
 }) {
   const { t } = useLocale();
 
@@ -115,7 +152,7 @@ function RealTabBarItem({
 
   const animatedTextStyle = useAnimatedStyle(() => {
     return {
-      color: interpolateColor(progress.value, [0, 1], ['#8E8E98', '#FFFFFF']),
+      color: interpolateColor(progress.value, [0, 1], ['#9E9E9E', '#FFFFFF']),
     };
   });
 
@@ -130,7 +167,7 @@ function RealTabBarItem({
           <Ionicons
             name={config.inactiveIcon}
             size={config.inactiveSize}
-            color="#8E8E98"
+            color="#9E9E9E"
           />
         </Animated.View>
         <Animated.View style={[styles.iconWrapper, activeIconStyle]}>
@@ -141,6 +178,7 @@ function RealTabBarItem({
             style={config.activeOffset}
           />
         </Animated.View>
+        <EqBars state={eq} />
       </View>
       <Animated.Text style={[styles.tabLabel, animatedTextStyle]} numberOfLines={1}>
         {t(config.labelKey)}
@@ -161,8 +199,10 @@ export default function TabsLayout() {
   const tabWidth = width / TAB_CONFIGS.length;
 
   const scrollRef = useRef<Animated.ScrollView>(null);
-  const blurTargetRef = useRef<View | null>(null);
   const scrollX = useSharedValue(0);
+  const { isPlaying, isVisible } = usePlayer();
+  const eqForTab = (index: number): EqState =>
+    index === 0 && isVisible ? (isPlaying ? 'playing' : 'paused') : 'hidden';
   const [activeTab, setActiveTab] = useState(0);
   const activeTabRef = useRef(0);
 
@@ -243,7 +283,7 @@ export default function TabsLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: Colors.canvas }}>
       {/* Real Interactive Horizontal Pager with 1:1 finger swipe tracking */}
-      <BlurTargetView ref={blurTargetRef} style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
         <Animated.ScrollView
           ref={scrollRef}
           horizontal
@@ -266,24 +306,23 @@ export default function TabsLayout() {
             <ProofTab />
           </View>
         </Animated.ScrollView>
-      </BlurTargetView>
+      </View>
 
       {/* Upward gradient fade: soft edge above the bottom navigation bar */}
       <LinearGradient
         pointerEvents="none"
         colors={[
-          'rgba(0, 0, 0, 0)',
-          'rgba(0, 0, 0, 0.65)',
+          Colors.canvas,
+          '#050506',
           '#000000',
         ]}
         locations={[0, 0.5, 1]}
         style={[styles.upwardGradient, { bottom: tabHeight }]}
       />
 
-      {/* Persistent Floating Mini-Player docked with real background blur */}
+      {/* Persistent Floating Mini-Player docked above the tab bar */}
       <FloatingMiniPlayer
         bottomOffset={floatingPlayerOffset}
-        blurTarget={blurTargetRef}
       />
 
       <SocialProofHost />
@@ -311,6 +350,7 @@ export default function TabsLayout() {
               scrollX={scrollX}
               width={width}
               onPress={() => handleTabPress(index)}
+              eq={eqForTab(index)}
             />
           ))}
         </View>
@@ -352,6 +392,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: CIRCLE_SIZE,
     height: CIRCLE_SIZE,
+  },
+  eq: {
+    position: 'absolute',
+    top: -1,
+    right: -4,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 2,
+    height: 12,
+  },
+  eqBar: {
+    width: 2.5,
+    borderRadius: 2,
+    backgroundColor: Colors.peach,
   },
   slidingCircle: {
     position: 'absolute',

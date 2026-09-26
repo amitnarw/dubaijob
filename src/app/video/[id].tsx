@@ -14,22 +14,44 @@ import { thumbnailUrl } from '@/services/youtubeService';
 import { AnimatedPressableScale } from '@/constants/animations';
 
 export default function VideoScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, yt, ytTitle } = useLocalSearchParams<{ id: string; yt?: string; ytTitle?: string }>();
   const { entitlements } = usePurchases();
   const { lang, t } = useLocale();
+
+  // Ad-hoc proof video (unlisted YouTube testimonial, not part of the 25 steps)
+  const adHocId = typeof yt === 'string' && yt.length > 0 ? yt : null;
 
   const currentIndex = useMemo(
     () => Math.max(0, COURSE_VIDEOS.findIndex((v) => v.id === id)),
     [id],
   );
 
-  const video = useMemo(
-    () => COURSE_VIDEOS[currentIndex] ?? COURSE_VIDEOS[0],
-    [currentIndex],
-  );
+  const video = useMemo(() => {
+    if (adHocId) {
+      const titleText =
+        typeof ytTitle === 'string' && ytTitle.length > 0 ? ytTitle : 'Success story';
+      return {
+        id: adHocId,
+        stepNumber: 0,
+        title: { en: titleText, hi: titleText, si: titleText, ta: titleText, ur: titleText, bn: titleText },
+        hindiTitle: '',
+        section: 1 as const,
+        sectionTitle: '',
+        chapterId: '',
+        chapterTitle: '',
+        duration: '',
+        description: '',
+        freePreview: true,
+      };
+    }
+    return COURSE_VIDEOS[currentIndex] ?? COURSE_VIDEOS[0];
+  }, [currentIndex, adHocId, ytTitle]);
 
-  const prevVideo = currentIndex > 0 ? COURSE_VIDEOS[currentIndex - 1] : null;
-  const nextVideo = currentIndex < COURSE_VIDEOS.length - 1 ? COURSE_VIDEOS[currentIndex + 1] : null;
+  const prevVideo = !adHocId && currentIndex > 0 ? COURSE_VIDEOS[currentIndex - 1] : null;
+  const nextVideo =
+    !adHocId && currentIndex < COURSE_VIDEOS.length - 1
+      ? COURSE_VIDEOS[currentIndex + 1]
+      : null;
 
   const locked = !entitlements.course && !video.freePreview;
   const localizedTitle = video.title[lang] ?? video.title.en;
@@ -38,9 +60,9 @@ export default function VideoScreen() {
     ToastControl.paused = true;
     return () => {
       ToastControl.paused = false;
-      markDone(video.id).catch(() => {});
+      if (!adHocId) markDone(video.id).catch(() => {});
     };
-  }, [video.id]);
+  }, [video.id, adHocId]);
 
   return (
     <View style={styles.root}>
@@ -51,7 +73,9 @@ export default function VideoScreen() {
         </Pressable>
         <View style={styles.headerTitleWrap}>
           <Text style={styles.headerKicker}>
-            Step {video.stepNumber} of {COURSE_VIDEOS.length} · {video.chapterTitle}
+            {adHocId
+              ? t('proof_section_videos')
+              : `Step ${video.stepNumber} of ${COURSE_VIDEOS.length} · ${video.chapterTitle}`}
           </Text>
           <Text style={styles.headerTitle} numberOfLines={1}>
             {localizedTitle}
@@ -70,7 +94,9 @@ export default function VideoScreen() {
         onUnlockPress={() =>
           router.push({ pathname: '/checkout/[productId]', params: { productId: 'course_full' } })
         }
-        onEnded={() => markDone(video.id).catch(() => {})}
+        onEnded={() => {
+          if (!adHocId) markDone(video.id).catch(() => {});
+        }}
         onNextLesson={nextVideo ? () => router.replace(`/video/${nextVideo.id}`) : undefined}
         onPrevLesson={prevVideo ? () => router.replace(`/video/${prevVideo.id}`) : undefined}
         onBack={() => router.back()}
@@ -78,23 +104,20 @@ export default function VideoScreen() {
 
       {/* Lesson Details & CTAs */}
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        {/* Step metadata pill */}
-        <View style={styles.metaRow}>
-          <View style={styles.stepPill}>
-            <Text style={styles.stepPillText}>Step {video.stepNumber}</Text>
-          </View>
-          <Text style={styles.durationPill}>{video.duration}</Text>
-          <Text style={styles.sectionPill} numberOfLines={1}>
-            {video.sectionTitle}
+        {/* Step metadata — one quiet line */}
+        {!adHocId && (
+          <Text style={styles.metaLine}>
+            Step {video.stepNumber} · {video.duration} · {video.sectionTitle}
           </Text>
-        </View>
+        )}
 
         <Text style={styles.title}>{localizedTitle}</Text>
-        {lang !== 'hi' && <Text style={styles.hindiNote}>{video.title.hi}</Text>}
-        <Text style={styles.desc}>{video.description}</Text>
-        {lang !== 'hi' && <Text style={styles.langNote}>{t('course_note_nonhindi')}</Text>}
+        {lang !== 'hi' && !!video.hindiTitle && <Text style={styles.hindiNote}>{video.title.hi}</Text>}
+        {!!video.description && <Text style={styles.desc}>{video.description}</Text>}
+        {lang !== 'hi' && !adHocId && <Text style={styles.langNote}>{t('course_note_nonhindi')}</Text>}
 
-        {locked ? (
+        {!adHocId &&
+          (locked ? (
           <GoldButton
             title={t('video_locked_cta')}
             onPress={() =>
@@ -111,9 +134,10 @@ export default function VideoScreen() {
             }}
             style={styles.cta}
           />
-        )}
+          ))}
 
         {/* Next / Previous Lesson Navigation Strip */}
+        {!adHocId && (
         <View style={styles.navRow}>
           {prevVideo ? (
             <AnimatedPressableScale
@@ -140,17 +164,18 @@ export default function VideoScreen() {
               style={[styles.navCard, styles.navCardNext]}
             >
               <View style={[styles.navCardText, { alignItems: 'flex-end' }]}>
-                <Text style={[styles.navCardSub, { color: Colors.gold }]}>Next Lesson</Text>
+                <Text style={styles.navCardSub}>Next Lesson</Text>
                 <Text style={styles.navCardTitle} numberOfLines={1}>
                   Step {nextVideo.stepNumber}
                 </Text>
               </View>
-              <Ionicons name="arrow-forward" size={16} color={Colors.gold} />
+              <Ionicons name="arrow-forward" size={16} color={Colors.muted} />
             </AnimatedPressableScale>
           ) : (
             <View style={styles.navCardPlaceholder} />
           )}
         </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -181,8 +206,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerKicker: {
-    color: Colors.gold,
-    fontSize: 10.5,
+    color: Colors.muted,
+    fontSize: 12,
     fontFamily: 'Inter-Medium',
     letterSpacing: 0.3,
   },
@@ -196,34 +221,11 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     paddingBottom: 48,
   },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  metaLine: {
+    ...Type.small,
+    color: Colors.muted,
     marginTop: 4,
     marginBottom: 4,
-  },
-  stepPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    backgroundColor: 'rgba(230, 184, 0, 0.15)',
-  },
-  stepPillText: {
-    color: Colors.gold,
-    fontSize: 11,
-    fontFamily: 'Inter-Bold',
-  },
-  durationPill: {
-    color: Colors.muted,
-    fontSize: 12,
-    fontFamily: 'Inter-Medium',
-  },
-  sectionPill: {
-    color: Colors.faint,
-    fontSize: 11.5,
-    fontFamily: 'Inter-Regular',
-    flex: 1,
   },
   title: {
     ...Type.chapterTitle,
@@ -233,7 +235,7 @@ const styles = StyleSheet.create({
   },
   hindiNote: {
     ...Type.small,
-    color: Colors.gold,
+    color: Colors.muted,
   },
   desc: {
     ...Type.body,
@@ -261,12 +263,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    padding: 12,
-    borderRadius: Radii.md,
-    backgroundColor: Colors.elevated,
+    paddingVertical: 10,
+    backgroundColor: Colors.canvas,
   },
   navCardNext: {
-    backgroundColor: 'rgba(230, 184, 0, 0.05)',
+    backgroundColor: Colors.canvas,
   },
   navCardPlaceholder: {
     flex: 1,
@@ -275,13 +276,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   navCardSub: {
-    color: Colors.faint,
-    fontSize: 10.5,
+    color: Colors.muted,
+    fontSize: 12,
     fontFamily: 'Inter-Medium',
   },
   navCardTitle: {
     color: Colors.text,
-    fontSize: 12.5,
+    fontSize: 15,
     fontFamily: 'Inter-SemiBold',
   },
 });

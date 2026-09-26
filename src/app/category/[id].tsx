@@ -1,5 +1,4 @@
 import React from 'react';
-import { useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,7 +7,6 @@ import {
   Pressable,
   useWindowDimensions,
 } from 'react-native';
-import { BlurTargetView } from 'expo-blur';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { CATEGORY_DETAILS, PodcastItem } from '@/data/podcastData';
+import { Colors } from '@/constants/theme';
 import { ConcentricArtwork } from '@/components/podcast/ConcentricArtwork';
 import { FloatingMiniPlayer } from '@/components/podcast/FloatingMiniPlayer';
 import { AnimatedPressableCard } from '@/components/podcast/AnimatedPressableCard';
@@ -26,7 +25,6 @@ export default function CategoryDetailScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { playTrack } = usePlayer();
-  const blurTargetRef = useRef<View | null>(null);
 
   const categoryId = typeof id === 'string' ? id.toLowerCase() : 'basics';
   const categoryData = CATEGORY_DETAILS[categoryId] || CATEGORY_DETAILS.basics;
@@ -76,21 +74,7 @@ export default function CategoryDetailScreen() {
 
   return (
     <View style={styles.root}>
-      {/* Ambient Top Glow */}
-      <View style={styles.ambientGlowContainer} pointerEvents="none">
-        <LinearGradient
-          colors={[
-            categoryData.ambientColor || 'rgba(230, 57, 70, 0.32)',
-            'rgba(230, 57, 70, 0.08)',
-            'transparent',
-          ]}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </View>
-
-      <BlurTargetView ref={blurTargetRef} style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -155,7 +139,7 @@ export default function CategoryDetailScreen() {
                   size={cardWidth}
                   theme={item.theme}
                   badgeText={item.badgeText}
-                  borderRadius={22}
+                  borderRadius={20}
                   showSpeakerBadge={true}
                 />
 
@@ -172,12 +156,11 @@ export default function CategoryDetailScreen() {
           ))}
         </View>
       </ScrollView>
-      </BlurTargetView>
+      </View>
 
       {/* Persistent Floating Mini-Player docked at the bottom */}
       <FloatingMiniPlayer
         bottomOffset={Math.max(insets.bottom, 16) + 12}
-        blurTarget={blurTargetRef}
       />
     </View>
   );
@@ -186,15 +169,7 @@ export default function CategoryDetailScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#111215',
-  },
-  ambientGlowContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 340,
-    zIndex: 0,
+    backgroundColor: Colors.canvas,
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -223,26 +198,22 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    elevation: 8,
     marginBottom: 14,
   },
   heroTitle: {
     color: '#FFFFFF',
-    fontSize: 25,
-    fontWeight: '700',
-    letterSpacing: -0.5,
+    fontSize: 28,
+    fontFamily: 'Inter-Bold',
+    letterSpacing: -0.6,
     marginBottom: 8,
   },
   heroSubtitle: {
     color: '#8E8E98',
     fontSize: 13,
-    lineHeight: 18,
+    fontFamily: 'Inter-Regular',
+    lineHeight: 19,
     textAlign: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 28,
   },
   gridContainer: {
     flexDirection: 'row',
@@ -254,19 +225,19 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   metaContainer: {
-    marginTop: 8,
-    paddingHorizontal: 2,
+    marginTop: 10,
+    paddingHorizontal: 4,
   },
   itemTitle: {
     color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
     letterSpacing: -0.2,
   },
   itemBroadcaster: {
     color: '#8E8E98',
     fontSize: 12,
-    marginTop: 2,
-    fontWeight: '400',
+    fontFamily: 'Inter-Regular',
+    marginTop: 3,
   },
 });

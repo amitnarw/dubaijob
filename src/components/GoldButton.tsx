@@ -15,7 +15,7 @@ interface Props {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-/** Primary action: white fill (reference style). dark variant = tonal + gold text. */
+/** Primary action: green pill (EduWave style). dark variant = tonal + light text. */
 export function GoldButton({ title, onPress, disabled, style, dark }: Props) {
   const scale = useSharedValue(1);
   const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
@@ -63,13 +63,13 @@ export function GoldButton({ title, onPress, disabled, style, dark }: Props) {
 
 const styles = StyleSheet.create({
   primary: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: Radii.card,
+    backgroundColor: Colors.green,
+    borderRadius: Radii.pill,
     paddingVertical: 16,
     paddingHorizontal: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 52,
+    minHeight: 54,
   },
   primaryText: {
     ...Type.bodyMedium,
@@ -79,18 +79,18 @@ const styles = StyleSheet.create({
   },
   dark: {
     backgroundColor: Colors.elevated,
-    borderRadius: Radii.card,
+    borderRadius: Radii.pill,
     paddingVertical: 16,
     paddingHorizontal: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 52,
+    minHeight: 54,
   },
   darkText: {
     ...Type.bodyMedium,
     fontFamily: 'Inter-Bold',
     fontSize: 15,
-    color: Colors.goldLight,
+    color: Colors.text,
   },
   disabled: {
     opacity: 0.5,

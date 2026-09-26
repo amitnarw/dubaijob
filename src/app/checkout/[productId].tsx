@@ -21,20 +21,24 @@ export default function CheckoutScreen() {
     if (productId === PRODUCT_COURSE_FULL || productId === PRODUCT_COURSE_DISCOUNT) {
       return {
         name: 'Dubai Job Master Course',
-        bullets: [
-          'All 25 video lessons, lifetime access',
-          'Dubai CV templates + portal guides',
-          'Free updates forever',
-        ],
+        bullets: [t('checkout_b1'), t('checkout_b2'), t('checkout_b3')],
         fallbackPrice: 6000,
       };
     }
     const pkg = PACKAGES.find((p) => p.productId === productId);
     if (!pkg) return null;
     return { name: pkg.name, bullets: pkg.bullets, fallbackPrice: pkg.priceInr };
-  }, [productId]);
+  }, [productId, t]);
 
   const storeProduct = productId ? storefront.bySku[productId] : undefined;
+  // One status line at a time (priority: error > pending > unavailable).
+  const status = error
+    ? { kind: 'error' as const, text: error }
+    : lastEvent === 'pending'
+      ? { kind: 'pending' as const, text: t('checkout_pending') }
+      : !storefront.available
+        ? { kind: 'note' as const, text: t('checkout_unavailable') }
+        : null;
   const priceText =
     storeProduct?.displayPrice ?? (item ? `₹${item.fallbackPrice.toLocaleString('en-IN')}` : '');
 
@@ -87,14 +91,14 @@ export default function CheckoutScreen() {
             {STATS.rating}★ · {(STATS.reviewCount / 1000).toFixed(1)}k {t('proof_reviews_suffix')}
           </Text>
         </View>
-        {lastEvent === 'pending' && (
+        {status?.kind === 'pending' && (
           <View style={styles.pending}>
             <ActivityIndicator color={Colors.gold} />
-            <Text style={styles.pendingText}>{t('checkout_pending')}</Text>
+            <Text style={styles.pendingText}>{status.text}</Text>
           </View>
         )}
-        {error && <Text style={styles.error}>{error}</Text>}
-        {!storefront.available && <Text style={styles.note}>{t('checkout_unavailable')}</Text>}
+        {status?.kind === 'error' && <Text style={styles.error}>{status.text}</Text>}
+        {status?.kind === 'note' && <Text style={styles.note}>{status.text}</Text>}
         <GoldButton
           title={busy ? t('checkout_waiting') : t('checkout_pay', { price: priceText })}
           onPress={pay}

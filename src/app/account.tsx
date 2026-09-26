@@ -1,28 +1,48 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { Colors, Type, Presets, Radii, Spacing } from '@/constants/theme';
 import { GoldButton } from '@/components/GoldButton';
+import { AnimatedPressableCard } from '@/components/podcast/AnimatedPressableCard';
 import { useAuth } from '@/context/AuthContext';
 import { usePurchases } from '@/context/PurchaseContext';
-import { useLocale } from '@/i18n/LocaleContext';
+import { LANGUAGES, useLocale } from '@/i18n/LocaleContext';
 import { EMPTY_PROFILE, loadProfile, saveProfile, type UserProfile } from '@/services/profileService';
 import { PACKAGES } from '@/data/packages';
 
+type AccountView = 'menu' | 'profile' | 'language' | 'purchases';
+
 /**
- * Account sheet (from podcast-tab avatar): edit profile, owned products,
- * Restore Purchases, language switch, Sign out. NOT a tab.
+ * Account sheet (from podcast-tab avatar): one clean menu.
+ * Each row opens a single focused job. NOT a tab.
  */
 export default function AccountScreen() {
   const { auth, signOut } = useAuth();
   const { entitlements, restore } = usePurchases();
   const { t, lang, setLang } = useLocale();
+  const [view, setView] = useState<AccountView>('menu');
   const [profile, setProfile] = useState<UserProfile>(EMPTY_PROFILE);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [signoutArmed, setSignoutArmed] = useState(false);
+  const signoutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastCloseNav = useRef(0);
+
+  // Safe close: never pop past the modal (which leaves a black empty route).
+  const closeAccount = () => {
+    const now = Date.now();
+    if (now - lastCloseNav.current < 500) return;
+    lastCloseNav.current = now;
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)');
+    }
+  };
 
   useEffect(() => {
     if (auth.status !== 'signed-in') {
@@ -35,6 +55,12 @@ export default function AccountScreen() {
       .finally(() => setLoading(false));
   }, [auth]);
 
+  useEffect(() => {
+    return () => {
+      if (signoutTimer.current) clearTimeout(signoutTimer.current);
+    };
+  }, []);
+
   if (auth.status !== 'signed-in') {
     return (
       <View style={styles.root}>
@@ -45,6 +71,12 @@ export default function AccountScreen() {
   }
 
   const set = (k: keyof UserProfile) => (v: string) => setProfile((p) => ({ ...p, [k]: v }));
+
+  const open = (v: AccountView) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    setMsg(null);
+    setView(v);
+  };
 
   const save = async () => {
     if (auth.status !== 'signed-in') return;
@@ -74,27 +106,76 @@ export default function AccountScreen() {
   };
 
   const doSignOut = async () => {
+    if (!signoutArmed) {
+      setSignoutArmed(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      if (signoutTimer.current) clearTimeout(signoutTimer.current);
+      signoutTimer.current = setTimeout(() => setSignoutArmed(false), 3000);
+      return;
+    }
+    if (signoutTimer.current) clearTimeout(signoutTimer.current);
     await signOut();
     router.replace('/login');
   };
 
   const ownedPackages = PACKAGES.filter((p) => entitlements.packages[p.productId]);
+  const activeLang = LANGUAGES.find((l) => l.code === lang);
 
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.head}>
-          <Text style={styles.title}>{t('account_title')}</Text>
-          <Pressable onPress={() => router.back()} hitSlop={12} style={styles.close}>
+          {view === 'menu' ? (
+            <Text style={styles.title}>{t('account_title')}</Text>
+          ) : (
+            <Pressable onPress={() => setView('menu')} hitSlop={12} style={styles.backBtn}>
+              <Ionicons name="arrow-back" size={22} color={Colors.text} />
+              <Text style={styles.backText}>{t('account_title')}</Text>
+            </Pressable>
+          )}
+          <Pressable onPress={closeAccount} hitSlop={12} style={styles.close}>
             <Ionicons name="close" size={22} color={Colors.text} />
           </Pressable>
         </View>
 
         {loading ? (
           <ActivityIndicator color={Colors.gold} style={styles.loader} />
-        ) : (
+        ) : view === 'menu' ? (
           <>
-            <Text style={styles.section}>{t('account_section_profile')}</Text>
+            <MenuRow
+              icon="person-outline"
+              title={t('account_menu_profile')}
+              sub={profile.name || t('account_menu_profile_sub')}
+              onPress={() => open('profile')}
+            />
+            <MenuRow
+              icon="language-outline"
+              title={t('account_menu_language')}
+              sub={activeLang ? activeLang.nativeName : ''}
+              onPress={() => open('language')}
+            />
+            <MenuRow
+              icon="bag-handle-outline"
+              title={t('account_menu_purchases')}
+              sub={
+                entitlements.course
+                  ? 'Dubai Job Master Course'
+                  : ownedPackages.length > 0
+                    ? ownedPackages.map((p) => p.name).join(', ')
+                    : t('account_none')
+              }
+              onPress={() => open('purchases')}
+            />
+            <Pressable onPress={doSignOut} style={styles.signout}>
+              <Ionicons name="log-out-outline" size={18} color={Colors.danger} />
+              <Text style={styles.signoutText}>
+                {signoutArmed ? t('account_signout_confirm') : t('account_signout')}
+              </Text>
+            </Pressable>
+          </>
+        ) : view === 'profile' ? (
+          <>
+            <Text style={styles.section}>{t('account_menu_profile')}</Text>
             {(['name', 'phone', 'address', 'city', 'pin'] as const).map((k) => (
               <View key={k} style={styles.field}>
                 <Text style={styles.label}>{k.toUpperCase()}</Text>
@@ -108,25 +189,36 @@ export default function AccountScreen() {
               </View>
             ))}
             <GoldButton title={saving ? t('login_saving') : t('login_save_cta')} onPress={save} disabled={saving} />
-
-            <Text style={styles.section}>{t('home_language')}</Text>
-            <View style={styles.langRow}>
-              {(['en', 'hi', 'si', 'ta', 'ur', 'bn'] as const).map((code) => {
-                const active = lang === code;
-                return (
-                  <Pressable
-                    key={code}
-                    onPress={() => setLang(code)}
-                    style={[styles.langChip, active && styles.langChipActive]}>
-                    <Text style={[styles.langChipText, active && styles.langChipTextActive]}>
-                      {code === 'en' ? 'EN' : code === 'hi' ? 'हिं' : code === 'si' ? 'සිං' : code === 'ta' ? 'தமி' : code === 'ur' ? 'اردو' : 'বাং'}
+            {msg && <Text style={styles.msg}>{msg}</Text>}
+          </>
+        ) : view === 'language' ? (
+          <>
+            <Text style={styles.section}>{t('account_menu_language')}</Text>
+            {LANGUAGES.map((l) => {
+              const active = l.code === lang;
+              return (
+                <AnimatedPressableCard
+                  key={l.code}
+                  scaleTo={0.98}
+                  onPress={() => {
+                    setLang(l.code);
+                    setView('menu');
+                  }}
+                  style={[styles.langOption, active && styles.langOptionActive]}>
+                  <View style={styles.langMeta}>
+                    <Text style={[styles.langNative, active && styles.langNativeActive]}>
+                      {l.nativeName}
                     </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <Text style={styles.section}>{t('account_section_purchases')}</Text>
+                    <Text style={styles.langEnglish}>{l.englishName}</Text>
+                  </View>
+                  {active && <Ionicons name="checkmark-circle" size={22} color={Colors.gold} />}
+                </AnimatedPressableCard>
+              );
+            })}
+          </>
+        ) : (
+          <>
+            <Text style={styles.section}>{t('account_menu_purchases')}</Text>
             <View style={styles.card}>
               <Row icon="play-circle" text="Dubai Job Master Course" owned={entitlements.course} />
               {ownedPackages.map((p) => (
@@ -142,17 +234,38 @@ export default function AccountScreen() {
               onPress={doRestore}
               disabled={restoring}
             />
-
             {msg && <Text style={styles.msg}>{msg}</Text>}
-
-            <Pressable onPress={doSignOut} style={styles.signout}>
-              <Ionicons name="log-out-outline" size={18} color={Colors.danger} />
-              <Text style={styles.signoutText}>{t('account_signout')}</Text>
-            </Pressable>
           </>
         )}
       </ScrollView>
     </View>
+  );
+}
+
+function MenuRow({
+  icon,
+  title,
+  sub,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  sub: string;
+  onPress: () => void;
+}) {
+  return (
+    <AnimatedPressableCard onPress={onPress} scaleTo={0.98} style={styles.menuRow}>
+      <View style={styles.menuIcon}>
+        <Ionicons name={icon} size={20} color={Colors.goldLight} />
+      </View>
+      <View style={styles.menuMeta}>
+        <Text style={styles.menuTitle}>{title}</Text>
+        <Text style={styles.menuSub} numberOfLines={1}>
+          {sub}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={20} color={Colors.faint} />
+    </AnimatedPressableCard>
   );
 }
 
@@ -174,16 +287,27 @@ const styles = StyleSheet.create({
   scroll: {
     padding: Spacing.screen,
     paddingTop: 52,
-    gap: Spacing.sm + 2,
+    gap: Spacing.md,
     paddingBottom: 48,
   },
   head: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
   },
   title: {
     ...Type.pageTitle,
+    color: Colors.text,
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  backText: {
+    ...Type.bodyMedium,
+    fontFamily: 'Inter-Bold',
     color: Colors.text,
   },
   close: {
@@ -197,11 +321,40 @@ const styles = StyleSheet.create({
   loader: {
     marginTop: 40,
   },
+  menuRow: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radii.card,
+    padding: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  menuIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: Colors.elevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuMeta: {
+    flex: 1,
+    gap: 2,
+  },
+  menuTitle: {
+    ...Type.bodyMedium,
+    fontFamily: 'Inter-Bold',
+    color: Colors.text,
+  },
+  menuSub: {
+    ...Type.caption,
+    color: Colors.muted,
+  },
   section: {
     ...Type.chapterTitle,
     fontSize: 20,
     color: Colors.text,
-    marginTop: Spacing.md,
+    marginTop: Spacing.sm,
   },
   field: {
     gap: 6,
@@ -214,6 +367,32 @@ const styles = StyleSheet.create({
   },
   input: {
     ...Presets.input,
+  },
+  langOption: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radii.card,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  langOptionActive: {
+    backgroundColor: Colors.goldTint,
+  },
+  langMeta: {
+    flex: 1,
+  },
+  langNative: {
+    ...Type.cardTitle,
+    color: Colors.text,
+  },
+  langNativeActive: {
+    color: Colors.goldLight,
+  },
+  langEnglish: {
+    ...Type.caption,
+    color: Colors.faint,
+    marginTop: 2,
   },
   card: {
     backgroundColor: Colors.surface,
@@ -251,28 +430,5 @@ const styles = StyleSheet.create({
     ...Type.bodyMedium,
     fontFamily: 'Inter-Bold',
     color: Colors.danger,
-  },
-  langRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  langChip: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radii.md,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  langChipActive: {
-    backgroundColor: '#FFFFFF',
-  },
-  langChipText: {
-    ...Type.small,
-    color: Colors.muted,
-  },
-  langChipTextActive: {
-    ...Type.small,
-    fontFamily: 'Inter-Bold',
-    color: Colors.textOn,
   },
 });

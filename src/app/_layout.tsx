@@ -48,6 +48,8 @@ function Gate() {
         name="language"
         options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
       />
+      <Stack.Screen name="chapter/[id]" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="progress" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="video/[id]" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="checkout/[productId]" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="success" />

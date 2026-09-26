@@ -73,7 +73,7 @@ export function DiscountModal({ visible, onClose, onClaim }: Props) {
         </Animated.View>
         <Animated.View entering={ZoomIn.duration(280)} style={[styles.card, Shadows.modal]}>
           <LinearGradient
-            colors={['rgba(212,175,55,0.22)', 'rgba(212,175,55,0.05)']}
+            colors={['#3A2C10', '#171207']}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={styles.glow}
@@ -104,7 +104,7 @@ export function DiscountModal({ visible, onClose, onClaim }: Props) {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.xl,

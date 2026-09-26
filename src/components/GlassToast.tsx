@@ -1,5 +1,4 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeOutUp } from 'react-native-reanimated';
 import { Colors, Type, Radii, Spacing } from '@/constants/theme';
@@ -19,7 +18,7 @@ export function GlassToast({ toast }: { toast: ProofToast }) {
       exiting={FadeOutUp.duration(250)}
       style={styles.float}
       pointerEvents="none">
-      <BlurView intensity={60} tint="dark" style={styles.blur}>
+      <View style={styles.blur}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{initials(toast.name)}</Text>
         </View>
@@ -35,7 +34,8 @@ export function GlassToast({ toast }: { toast: ProofToast }) {
           </Text>
         </View>
         <Ionicons name="checkmark-circle" size={20} color={Colors.gold} />
-      </BlurView>
+        <Ionicons name="chevron-forward" size={16} color={Colors.faint} />
+      </View>
     </Animated.View>
   );
 }
@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     bottom: 108,
     borderRadius: Radii.card,
     overflow: 'hidden',
-    backgroundColor: 'rgba(20,20,22,0.88)',
+    backgroundColor: '#141417',
   },
   blur: {
     flexDirection: 'row',

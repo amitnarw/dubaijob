@@ -1,15 +1,14 @@
 import { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import { Colors, Type, Presets, Spacing, Radii } from '@/constants/theme';
+import { Colors, Type, Spacing, Radii } from '@/constants/theme';
 import { type CourseVideo } from '@/data/courseVideos';
 import { useLocale } from '@/i18n/LocaleContext';
-import { thumbnailUrl } from '@/services/youtubeService';
 import { AnimatedPressableScale, Transitions, Springs } from '@/constants/animations';
 
 interface Props {
@@ -22,7 +21,6 @@ interface Props {
 
 export function VideoRow({ video, index, locked, done, onPress }: Props) {
   const [expanded, setExpanded] = useState(false);
-  const [thumbFailed, setThumbFailed] = useState(false);
   const { lang, t } = useLocale();
   const localizedTitle = video.title[lang] ?? video.title.en;
 
@@ -41,53 +39,35 @@ export function VideoRow({ video, index, locked, done, onPress }: Props) {
   return (
     <Animated.View layout={Transitions.layout} style={styles.card}>
       <AnimatedPressableScale onPress={onPress} scaleTo={0.98} style={styles.main}>
-        <View style={styles.thumbWrap}>
-          {thumbFailed ? (
-            <View style={[styles.thumb, styles.thumbFallback]}>
-              <Ionicons name="play-circle" size={30} color={Colors.gold} />
-            </View>
-          ) : (
-            <Image
-              source={{ uri: thumbnailUrl(video.id) }}
-              style={styles.thumb}
-              onError={() => setThumbFailed(true)}
-            />
-          )}
-          {locked && (
-            <View style={styles.lockVeil}>
-              <Ionicons name="lock-closed" size={20} color={Colors.goldLight} />
-            </View>
-          )}
-          {done && !locked && (
-            <View style={styles.doneBadge}>
-              <Ionicons name="checkmark" size={12} color={Colors.textOn} />
-            </View>
-          )}
-        </View>
         <View style={styles.meta}>
-          <View style={styles.kickerRow}>
-            <Text style={styles.kicker}>
-              Step {video.stepNumber || index + 1} · {video.duration}
+          <View style={styles.titleRow}>
+            <Text style={styles.title} numberOfLines={1}>
+              {localizedTitle}
             </Text>
             {video.freePreview && (
-              <View style={styles.freeBadge}>
-                <Text style={styles.freeText}>{t('podcast_free').toUpperCase()}</Text>
+              <View style={styles.freePill}>
+                <Text style={styles.freeText}>{t('podcast_free')}</Text>
               </View>
             )}
           </View>
-          <Text style={styles.title} numberOfLines={2}>
-            {localizedTitle}
-          </Text>
-          <Text style={styles.hindiSubtitle} numberOfLines={1}>
-            {video.hindiTitle}
+          <Text style={styles.duration} numberOfLines={1}>
+            {video.duration} Minutes
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={20} color={Colors.faint} />
+        <View style={styles.playCircle}>
+          {done && !locked ? (
+            <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+          ) : locked ? (
+            <Ionicons name="lock-closed" size={14} color="#FFFFFF" />
+          ) : (
+            <Ionicons name="play" size={16} color="#FFFFFF" style={styles.playIcon} />
+          )}
+        </View>
       </AnimatedPressableScale>
       <Pressable onPress={toggleExpand} style={styles.moreBtn} hitSlop={8}>
         <Text style={styles.moreText}>{expanded ? t('podcast_show_less') : t('podcast_show_more')}</Text>
         <Animated.View style={chevronAnim}>
-          <Ionicons name="chevron-down" size={14} color={Colors.gold} />
+          <Ionicons name="chevron-down" size={14} color={Colors.accent} />
         </Animated.View>
       </Pressable>
       {expanded && (
@@ -106,7 +86,7 @@ export function VideoRow({ video, index, locked, done, onPress }: Props) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: Radii.md,
+    borderRadius: Radii.card,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
   },
@@ -115,75 +95,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.md,
   },
-  thumbWrap: {
-    width: 112,
-    height: 70,
-  },
-  thumb: {
-    width: 112,
-    height: 70,
-    borderRadius: Radii.sm,
-    backgroundColor: Colors.trackBg,
-  },
-  thumbFallback: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  lockVeil: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    borderRadius: Radii.sm,
-    backgroundColor: 'rgba(10,10,12,0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  doneBadge: {
-    position: 'absolute',
-    right: 6,
-    bottom: 6,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: Colors.gold,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   meta: {
     flex: 1,
-    gap: 2,
+    gap: 4,
   },
-  kickerRow: {
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.sm,
   },
-  kicker: {
-    ...Type.caption,
-    color: Colors.gold,
+  title: {
+    ...Type.body,
+    fontFamily: 'Inter-SemiBold',
+    color: Colors.text,
+    flex: 1,
   },
-  freeBadge: {
-    backgroundColor: Colors.goldTint,
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+  freePill: {
+    backgroundColor: Colors.peach,
+    borderRadius: Radii.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
   },
   freeText: {
     ...Type.micro,
-    fontSize: 9,
-    color: Colors.goldLight,
+    fontSize: 10,
+    fontFamily: 'Inter-Bold',
+    color: Colors.textOn,
   },
-  title: {
+  duration: {
     ...Type.small,
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 13.5,
-    color: Colors.text,
+    color: Colors.muted,
   },
-  hindiSubtitle: {
-    ...Type.caption,
-    color: Colors.faint,
+  playCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.elevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playIcon: {
+    marginLeft: 2,
   },
   moreBtn: {
     flexDirection: 'row',
@@ -195,7 +147,7 @@ const styles = StyleSheet.create({
   moreText: {
     ...Type.caption,
     fontFamily: 'Inter-SemiBold',
-    color: Colors.goldLight,
+    color: Colors.accent,
   },
   expandedBox: {
     paddingTop: 6,

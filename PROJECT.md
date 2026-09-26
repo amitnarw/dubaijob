@@ -15,9 +15,10 @@ paid add-on packages, presented as a **premium podcast/masterclass app**.
 
 - **Platform**: Android only. `platforms: ["android"]` in `app.json`. Never
   re-add iOS/web configs, `react-dom`, `react-native-web`, or `.web.` files.
-- **Design reference**: dark podcast app (near-black canvas, tonal cards, white
-  primary actions, colorful concentric-ring artwork). Gold reserved for
-  COMMERCE ONLY (price, badges, discount timer).
+- **Design reference**: EduWave-style friendly learning app ("EduWave", see
+  `design.md` — the spec is the source of truth for look): warm dark canvas,
+  green primary actions, peach badges, colorful shine cards. Prices ride on
+  green. No transparency, blur, glows, shadows, or illustrations anywhere.
 - **Tabs**: 3 tabs in bottom tab bar — **Course (index — main tab)**, **Packages**, **Proof**.
 - **Monetization**: Google Play In-App products via `expo-iap` (see §8).
 - **i18n**: 6 languages — English, Hindi, Sinhala, Tamil, Urdu, Bengali (§5).

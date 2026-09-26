@@ -1,12 +1,13 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Colors, Type, Spacing } from '@/constants/theme';
 import { PackageCard } from '@/components/PackageCard';
 import { PACKAGES } from '@/data/packages';
 import { usePurchases } from '@/context/PurchaseContext';
 import { useLocale } from '@/i18n/LocaleContext';
 import { noteTabFocus } from '@/services/tabFocus';
+import { PaymentBottomSheet, PaymentItem } from '@/components/PaymentBottomSheet';
 
 import Animated from 'react-native-reanimated';
 import { Transitions } from '@/constants/animations';
@@ -14,12 +15,25 @@ import { Transitions } from '@/constants/animations';
 export default function PackagesTab() {
   const { entitlements } = usePurchases();
   const { t } = useLocale();
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<PaymentItem | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       noteTabFocus('packages');
     }, []),
   );
+
+  const handleBuyPackage = (pkg: typeof PACKAGES[0]) => {
+    setSelectedItem({
+      name: pkg.name,
+      price: pkg.priceInr,
+      currency: '₹',
+      productId: pkg.productId,
+      description: pkg.tagline,
+    });
+    setSheetVisible(true);
+  };
 
   return (
     <View style={styles.root}>
@@ -33,14 +47,19 @@ export default function PackagesTab() {
             <PackageCard
               pkg={p}
               owned={!!entitlements.packages[p.productId]}
-              onBuy={() =>
-                router.push({ pathname: '/checkout/[productId]', params: { productId: p.productId } })
-              }
+              onBuy={() => handleBuyPackage(p)}
             />
           </Animated.View>
         ))}
         <View style={{ height: 120 }} />
       </ScrollView>
+
+      {/* Payment Bottom Sheet (Exact Reference: screenshot_200929.png) */}
+      <PaymentBottomSheet
+        visible={sheetVisible}
+        onClose={() => setSheetVisible(false)}
+        item={selectedItem}
+      />
     </View>
   );
 }

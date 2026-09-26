@@ -1,4 +1,3 @@
-import React from 'react';
 import { StyleSheet, View, Text, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,21 +5,17 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Colors, Type, Presets, Spacing } from '@/constants/theme';
-import { LANGUAGES, useLocale } from '@/i18n/LocaleContext';
+import { LANGUAGES, useLocale, type Lang } from '@/i18n/LocaleContext';
 
 export default function LanguageScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { lang, setLang, t } = useLocale();
-  const [selected, setSelected] = React.useState(lang);
 
-  const pick = (code: typeof selected) => {
+  // One tap: apply immediately and go back (no separate confirm step).
+  const pick = (code: Lang) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    setSelected(code);
-  };
-
-  const confirm = () => {
-    setLang(selected);
+    if (code !== lang) setLang(code);
     router.back();
   };
 
@@ -37,7 +32,7 @@ export default function LanguageScreen() {
 
         <Animated.View entering={FadeInDown.duration(350).delay(80)} style={styles.list}>
           {LANGUAGES.map((l) => {
-            const active = l.code === selected;
+            const active = l.code === lang;
             return (
               <Pressable
                 key={l.code}
@@ -54,10 +49,6 @@ export default function LanguageScreen() {
         </Animated.View>
 
         <Text style={styles.note}>{t('lang_note_videos')}</Text>
-
-        <Pressable onPress={confirm} style={styles.cta}>
-          <Text style={styles.ctaText}>{t('lang_continue')}</Text>
-        </Pressable>
       </View>
     </View>
   );

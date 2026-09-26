@@ -439,7 +439,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
       }}
     >
       {isFullscreen && (
-        <StatusBar hidden translucent backgroundColor="transparent" />
+        <StatusBar hidden translucent backgroundColor="#000000" />
       )}
 
       {/* STREAM LAYER — embedded video, scaled & cropped to never show margins */}
@@ -483,7 +483,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
         <>
           <LinearGradient
             pointerEvents="none"
-            colors={['rgba(0,0,0,0.95)', 'rgba(0,0,0,0.0)']}
+            colors={['#000000', '#14161B']}
             style={[styles.topScrim, { height: SCRIM_TOP, top: 0 }]}
           />
           <View pointerEvents="none" style={[styles.bottomScrim, { height: SCRIM_BOTTOM, bottom: 0 }]} />
@@ -504,7 +504,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
             <View style={styles.posterPlaceholder} />
           )}
           <LinearGradient
-            colors={['rgba(0,0,0,0.55)', 'rgba(0,0,0,0.15)', 'rgba(0,0,0,0.85)']}
+            colors={['#080808', '#0B0C0E', '#080808']}
             style={StyleSheet.absoluteFill}
           />
           <View style={styles.playHint}>
@@ -617,7 +617,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
         >
           <LinearGradient
             pointerEvents="none"
-            colors={['rgba(0,0,0,0.55)', 'rgba(0,0,0,0.0)', 'rgba(0,0,0,0.8)']}
+            colors={['#0C0C0C', '#15171C', '#050505']}
             style={StyleSheet.absoluteFill}
           />
 
@@ -785,7 +785,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: '#000000',
   },
   hardCover: {
     position: 'absolute',
@@ -795,7 +795,7 @@ const styles = StyleSheet.create({
   },
   sideCover: {
     position: 'absolute',
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: '#000000',
     borderRadius: 14,
   },
   posterImage: {
@@ -819,17 +819,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.gold,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.4,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 10,
-    elevation: 8,
   },
   buffering: {
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.25)',
+    backgroundColor: '#000000',
   },
   tapZone: {
     position: 'absolute',
@@ -852,7 +847,7 @@ const styles = StyleSheet.create({
     width: 130,
     height: 130,
     borderRadius: 65,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: '#000000',
   },
   rippleText: {
     color: '#FFFFFF',
@@ -871,7 +866,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -895,7 +890,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: '#000000',
   },
   speedPillText: {
     color: Colors.gold,
@@ -913,7 +908,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -930,11 +925,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.gold,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.gold,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.45,
-    shadowRadius: 10,
-    elevation: 8,
   },
   bottomBar: {
     flexDirection: 'row',
@@ -957,7 +947,7 @@ const styles = StyleSheet.create({
   },
   seekTrack: {
     height: 3,
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: '#3A3D45',
     borderRadius: 1.5,
     position: 'relative',
   },
@@ -973,15 +963,10 @@ const styles = StyleSheet.create({
     height: 14,
     borderRadius: 7,
     backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.45,
-    shadowRadius: 3,
-    elevation: 4,
   },
   lockedOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(15,16,20,0.96)',
+    backgroundColor: '#0F1014',
     alignItems: 'center',
     justifyContent: 'center',
   },

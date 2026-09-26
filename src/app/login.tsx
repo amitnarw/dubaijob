@@ -1,308 +1,326 @@
-import { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
-  ActivityIndicator,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
+  Text,
+  ActivityIndicator,
+  useWindowDimensions,
+  Image,
 } from 'react-native';
-import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Colors, Type, Presets, Radii, Spacing } from '@/constants/theme';
-import { GoldButton } from '@/components/GoldButton';
-import { TrustStrip } from '@/components/TrustStrip';
+import Animated from 'react-native-reanimated';
+
+import { Colors, Radii, Spacing, Type } from '@/constants/theme';
+import { Springs, Transitions, AnimatedPressableScale } from '@/constants/animations';
 import { useAuth } from '@/context/AuthContext';
 import { useLocale } from '@/i18n/LocaleContext';
-import { EMPTY_PROFILE, loadProfile, saveProfile, type UserProfile } from '@/services/profileService';
 
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-  keyboardType = 'default',
-  editable = true,
-}: {
-  label: string;
-  value: string;
-  onChange: (t: string) => void;
-  placeholder: string;
-  keyboardType?: 'default' | 'phone-pad' | 'email-address' | 'numeric';
-  editable?: boolean;
-}) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        placeholder={placeholder}
-        placeholderTextColor={Colors.faint}
-        keyboardType={keyboardType}
-        editable={editable}
-        style={[styles.input, !editable && styles.inputLocked]}
-      />
-    </View>
-  );
-}
+// 5 images for the curved bottom arc gallery (Exact Reference: screenshot_201217.png)
+const ARC_CARDS = [
+  {
+    id: '1',
+    rotation: '-14deg',
+    translateY: 18,
+    icon: 'laptop-outline',
+    color: '#D2EBE0',
+    label: 'Tech',
+  },
+  {
+    id: '2',
+    rotation: '-7deg',
+    translateY: 6,
+    icon: 'construct-outline',
+    color: '#DFDBF5',
+    label: 'Engineering',
+  },
+  {
+    id: '3',
+    rotation: '0deg',
+    translateY: 0,
+    icon: 'briefcase-outline',
+    color: '#FBE3D3',
+    label: 'Corporate',
+  },
+  {
+    id: '4',
+    rotation: '7deg',
+    translateY: 6,
+    icon: 'business-outline',
+    color: '#D6EDF8',
+    label: 'Consulting',
+  },
+  {
+    id: '5',
+    rotation: '14deg',
+    translateY: 18,
+    icon: 'airplane-outline',
+    color: '#FDF1BA',
+    label: 'Aviation',
+  },
+];
 
 export default function LoginScreen() {
-  const { auth, signIn } = useAuth();
+  const { signIn } = useAuth();
   const { t } = useLocale();
+  const insets = useSafeAreaInsets();
   const [busy, setBusy] = useState(false);
-  const [profile, setProfile] = useState<UserProfile>(EMPTY_PROFILE);
-  const [profileLoading, setProfileLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const signedIn = auth.status === 'signed-in';
-  const notConfigured = auth.status === 'not-configured';
-
-  useEffect(() => {
-    if (!signedIn || auth.status !== 'signed-in') return;
-    setProfileLoading(true);
-    loadProfile(auth.uid)
-      .then((p) => {
-        setProfile({
-          ...p,
-          name: p.name || auth.name,
-          email: p.email || auth.email,
-          photo: p.photo || auth.photo,
-        });
-      })
-      .catch(() => {
-        setProfile({ ...EMPTY_PROFILE, name: auth.name, email: auth.email, photo: auth.photo });
-      })
-      .finally(() => setProfileLoading(false));
-  }, [signedIn, auth]);
-
-  const doSignIn = async () => {
-    setBusy(true);
-    setError(null);
-    const next = await signIn();
-    setBusy(false);
-    if (next.status === 'signed-out') setError(t('login_error_cancelled'));
-  };
-
-  const set = (k: keyof UserProfile) => (v: string) => setProfile((p) => ({ ...p, [k]: v }));
-
-  const save = async () => {
-    if (auth.status !== 'signed-in') return;
-    if (!profile.name.trim()) {
-      setError(t('login_err_name'));
-      return;
-    }
-    if (profile.phone.trim().length < 10) {
-      setError(t('login_err_phone'));
-      return;
-    }
+  const handleGoogleSignIn = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     setBusy(true);
     setError(null);
     try {
-      await saveProfile(auth.uid, profile);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      router.replace('/(tabs)');
-    } catch {
-      setError(t('login_err_save'));
+      const res = await signIn();
+      if (res.status === 'signed-out') {
+        setError('Sign in was cancelled.');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Could not sign in with Google.');
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={styles.hero}>{t('login_hero')}</Text>
-        <Text style={styles.sub}>{t('login_sub')}</Text>
+    <View style={[styles.root, { paddingTop: Math.max(insets.top, 24) }]}>
+      {/* Top Content Area */}
+      <View style={styles.topContainer}>
+        {/* Brand Chip */}
+        <Animated.View entering={Transitions.fadeDown(0)} style={styles.brandChip}>
+          <Ionicons name="sparkles" size={14} color="#D96A38" />
+          <Text style={styles.brandChipText}>DUBAI MASTERCLASS PLATFORM</Text>
+        </Animated.View>
 
-        {!signedIn && (
-          <View style={styles.ctaBlock}>
-            <Pressable onPress={doSignIn} disabled={busy} style={styles.googleBtn}>
-              {busy ? (
-                <ActivityIndicator color={Colors.textOn} />
-              ) : (
-                <>
-                  <Ionicons name="logo-google" size={20} color={Colors.textOn} />
-                  <Text style={styles.googleText}>{t('login_google')}</Text>
-                </>
-              )}
-            </Pressable>
-            {notConfigured && <Text style={styles.demoHint}>{t('login_demo_hint')}</Text>}
-            <TrustStrip />
-            {error && <Text style={styles.error}>{error}</Text>}
-          </View>
-        )}
+        {/* Title (Exact Reference: screenshot_201217.png) */}
+        <Animated.View entering={Transitions.fadeDown(60)}>
+          <Text style={styles.title}>Welcome Back</Text>
+          <Text style={styles.titleSub}>to DubaiJob</Text>
+        </Animated.View>
 
-        {signedIn && auth.status === 'signed-in' && (
-          <View style={styles.form}>
-            {auth.mock && (
-              <View style={styles.demoChip}>
-                <Ionicons name="flask-outline" size={14} color={Colors.gold} />
-                <Text style={styles.demoChipText}>{t('login_demo_chip')}</Text>
-              </View>
-            )}
-            <View style={styles.idRow}>
-              {profile.photo || auth.photo ? (
-                <Image source={{ uri: profile.photo ?? auth.photo ?? '' }} style={styles.avatar} />
-              ) : (
-                <View style={[styles.avatar, styles.avatarFallback]}>
-                  <Ionicons name="person" size={24} color={Colors.gold} />
-                </View>
-              )}
-              <View style={styles.idMeta}>
-                <Text style={styles.idName}>{profile.name || auth.name || 'Your profile'}</Text>
-                <Text style={styles.idEmail}>{profile.email || auth.email}</Text>
-              </View>
-            </View>
+        <Animated.Text entering={Transitions.fadeDown(120)} style={styles.desc}>
+          Sign in to access your curated Dubai job roadmap, verified ATS resume blueprints, and recruiter network.
+        </Animated.Text>
 
-            {profileLoading ? (
-              <ActivityIndicator color={Colors.gold} style={styles.loader} />
+        {/* Google Sign In Button */}
+        <Animated.View entering={Transitions.fadeDown(180)} style={styles.buttonContainer}>
+          <AnimatedPressableScale
+            onPress={handleGoogleSignIn}
+            disabled={busy}
+            style={[styles.googleBtn, busy && { opacity: 0.8 }]}
+          >
+            {busy ? (
+              <ActivityIndicator color="#121212" />
             ) : (
-              <>
-                <Field label={t('login_field_name')} value={profile.name} onChange={set('name')} placeholder={t('login_ph_name')} />
-                <Field label={t('login_field_email')} value={profile.email} onChange={set('email')} placeholder="you@email.com" keyboardType="email-address" editable={false} />
-                <Field label={t('login_field_phone')} value={profile.phone} onChange={set('phone')} placeholder={t('login_ph_phone')} keyboardType="phone-pad" />
-                <Field label={t('login_field_address')} value={profile.address} onChange={set('address')} placeholder={t('login_ph_address')} />
-                <Field label={t('login_field_city')} value={profile.city} onChange={set('city')} placeholder={t('login_ph_city')} />
-                <Field label={t('login_field_pin')} value={profile.pin} onChange={set('pin')} placeholder={t('login_ph_pin')} keyboardType="numeric" />
-              </>
+              <View style={styles.googleBtnContent}>
+                {/* Stylized Google Icon */}
+                <View style={styles.googleIconBadge}>
+                  <Ionicons name="logo-google" size={18} color="#EA4335" />
+                </View>
+                <Text style={styles.googleBtnText}>Continue with Google</Text>
+              </View>
             )}
-            {error && <Text style={styles.error}>{error}</Text>}
-            <GoldButton
-              title={busy ? t('login_saving') : t('login_save_cta')}
-              onPress={save}
-              disabled={busy || profileLoading}
-            />
+          </AnimatedPressableScale>
+
+          {error && <Text style={styles.errorText}>{error}</Text>}
+
+          <View style={styles.trustBadgeRow}>
+            <Ionicons name="shield-checkmark" size={14} color="#7BC96F" />
+            <Text style={styles.trustBadgeText}>
+              Secure 1-tap OAuth • No registration required
+            </Text>
           </View>
-        )}
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </Animated.View>
+      </View>
+
+      {/* Bottom Curved Arc Gallery (Exact Reference: screenshot_201217.png) */}
+      <Animated.View
+        entering={Transitions.fadeUp(240)}
+        style={[styles.arcGalleryContainer, { paddingBottom: Math.max(insets.bottom, 24) }]}
+      >
+        <Text style={styles.arcGalleryTitle}>Explore UAE Industries</Text>
+        <View style={styles.arcRow}>
+          {ARC_CARDS.map((card) => (
+            <View
+              key={card.id}
+              style={[
+                styles.arcCard,
+                {
+                  backgroundColor: card.color,
+                  transform: [
+                    { rotate: card.rotation },
+                    { translateY: card.translateY },
+                  ],
+                },
+              ]}
+            >
+              <View style={styles.arcIconWrap}>
+                <Ionicons name={card.icon as any} size={22} color="#1A1A1A" />
+              </View>
+              <Text style={styles.arcCardLabel}>{card.label}</Text>
+            </View>
+          ))}
+        </View>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: Colors.canvas,
+    backgroundColor: '#FAF7F2', // Warm elegant light tone matching screenshot_201217.png
+    justifyContent: 'space-between',
   },
-  scroll: {
-    flexGrow: 1,
-    padding: Spacing.screen,
-    paddingTop: 72,
-    gap: Spacing.md,
+  topContainer: {
+    paddingHorizontal: 28,
+    paddingTop: 36,
+    alignItems: 'center',
   },
-  hero: {
-    ...Type.heroSerifless,
-    fontSize: 44,
-    lineHeight: 50,
-    color: Colors.text,
+  brandChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FBE3D3',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radii.pill,
+    marginBottom: 20,
   },
-  sub: {
-    ...Type.body,
-    color: Colors.muted,
-    marginBottom: Spacing.lg,
+  brandChipText: {
+    fontSize: 11,
+    fontFamily: 'Inter-Bold',
+    color: '#D96A38',
+    letterSpacing: 0.5,
   },
-  ctaBlock: {
-    gap: Spacing.lg,
-    marginTop: Spacing.sm,
+  title: {
+    fontSize: 34,
+    fontFamily: 'Inter-Bold',
+    color: '#1A1A1A',
+    textAlign: 'center',
+    letterSpacing: -0.8,
+    lineHeight: 40,
+  },
+  titleSub: {
+    fontSize: 34,
+    fontFamily: 'Inter-Bold',
+    color: '#1A1A1A',
+    textAlign: 'center',
+    letterSpacing: -0.8,
+    lineHeight: 40,
+    marginBottom: 14,
+  },
+  desc: {
+    fontSize: 14.5,
+    fontFamily: 'Inter-Regular',
+    color: '#6B6862',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 32,
+    paddingHorizontal: 10,
+  },
+  buttonContainer: {
+    width: '100%',
+    alignItems: 'center',
   },
   googleBtn: {
+    width: '100%',
+    height: 56,
+    borderRadius: Radii.pill,
+    backgroundColor: '#1A1A1A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  googleBtnContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+  },
+  googleIconBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleBtnText: {
+    fontSize: 15.5,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
+  },
+  errorText: {
+    color: Colors.danger,
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  trustBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 18,
+  },
+  trustBadgeText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#7A7670',
+  },
+  arcGalleryContainer: {
+    alignItems: 'center',
+    overflow: 'hidden',
+    paddingTop: 10,
+  },
+  arcGalleryTitle: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#9C988F',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: 16,
+  },
+  arcRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: '#FFFFFF',
-    borderRadius: Radii.pill,
-    minHeight: 54,
+    height: 140,
+    paddingHorizontal: 10,
   },
-  googleText: {
-    ...Type.bodyMedium,
-    fontFamily: 'Inter-Bold',
-    fontSize: 16,
-    color: Colors.textOn,
-  },
-  demoHint: {
-    ...Type.caption,
-    color: Colors.faint,
-    textAlign: 'center',
-  },
-  demoChip: {
-    flexDirection: 'row',
+  arcCard: {
+    width: 64,
+    height: 100,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    backgroundColor: Colors.goldTint,
-    borderRadius: Radii.pill,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    alignSelf: 'center',
+    padding: 6,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  demoChipText: {
-    ...Type.caption,
-    fontFamily: 'Inter-SemiBold',
-    color: Colors.goldLight,
-  },
-  error: {
-    ...Type.small,
-    color: Colors.danger,
-    textAlign: 'center',
-  },
-  form: {
-    gap: Spacing.md,
-    marginTop: Spacing.sm,
-  },
-  idRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    backgroundColor: Colors.surface,
-    borderRadius: Radii.card,
-    padding: Spacing.md,
-  },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-  },
-  avatarFallback: {
-    backgroundColor: Colors.trackBg,
+  arcIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 8,
   },
-  idMeta: {
-    flex: 1,
-    gap: 2,
-  },
-  idName: {
-    ...Type.bodyMedium,
+  arcCardLabel: {
+    fontSize: 10,
     fontFamily: 'Inter-Bold',
-    color: Colors.text,
-  },
-  idEmail: {
-    ...Type.small,
-    color: Colors.muted,
-  },
-  loader: {
-    marginVertical: Spacing.xl,
-  },
-  field: {
-    gap: 6,
-  },
-  label: {
-    ...Type.small,
-    color: Colors.muted,
-  },
-  input: {
-    ...Presets.input,
-  },
-  inputLocked: {
-    opacity: 0.6,
+    color: '#1A1A1A',
+    textAlign: 'center',
   },
 });

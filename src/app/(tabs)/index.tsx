@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -6,439 +6,192 @@ import {
   ScrollView,
   Pressable,
   Image,
-  useWindowDimensions,
-  AppState,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeInRight,
-  FadeOut,
-  LinearTransition,
-} from 'react-native-reanimated';
-import { AnimatedPressableScale, Transitions, Springs } from '@/constants/animations';
-import * as Haptics from 'expo-haptics';
-import { Colors, Type, Presets, Spacing, Radii } from '@/constants/theme';
-import { TOP_PODCASTS, CATEGORIES, AUTHORS, type PodcastItem } from '@/data/podcastData';
-import { ConcentricArtwork } from '@/components/podcast/ConcentricArtwork';
-import { AnimatedPressableCard } from '@/components/podcast/AnimatedPressableCard';
-import { usePlayer } from '@/context/PlayerContext';
+import Animated from 'react-native-reanimated';
+
+import { AnimatedPressableScale, Transitions } from '@/constants/animations';
+import { Colors, Type, Presets, Spacing, Radii, ChapterCardThemes } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { usePurchases } from '@/context/PurchaseContext';
 import { useLocale } from '@/i18n/LocaleContext';
-import {
-  COURSE_VIDEOS,
-  COURSE_CHAPTERS,
-  chapterTitle,
-  TOTAL_LESSONS,
-} from '@/data/courseVideos';
-import { VideoRow } from '@/components/VideoRow';
-import { DiscountModal } from '@/components/DiscountModal';
-import { getProgress, progressStats, type ProgressMap } from '@/services/courseService';
-import { recordHomeVisit, shouldShowModal } from '@/services/discountService';
+import { COURSE_CHAPTERS, chapterTitle, CourseChapter } from '@/data/courseChapters';
+import { COURSE_VIDEOS } from '@/data/courseVideos';
 import { noteTabFocus } from '@/services/tabFocus';
-import { FULL_PRICE_INR, STATS } from '@/data/offers';
+
+const CHAPTER_THEME_KEYS = ['mint', 'lavender', 'peach', 'iceBlue', 'yellow'] as const;
+
+const CHAPTER_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+  'ch-1': 'laptop-outline',
+  'ch-2': 'document-text-outline',
+  'ch-3': 'airplane-outline',
+  'ch-4': 'briefcase-outline',
+  'ch-5': 'shield-checkmark-outline',
+};
+
+const CHAPTER_DURATIONS: Record<string, string> = {
+  'ch-1': '1.2 hrs',
+  'ch-2': '2.8 hrs',
+  'ch-3': '1.8 hrs',
+  'ch-4': '1.5 hrs',
+  'ch-5': '1.4 hrs',
+};
 
 export default function MasterclassesTabScreen() {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const { playTrack } = usePlayer();
   const { auth } = useAuth();
   const { entitlements } = usePurchases();
   const { t, lang } = useLocale();
 
-  const [selectedSection, setSelectedSection] = useState<0 | 1 | 2>(0);
-  const [expandedChapters, setExpandedChapters] = useState<Record<string, boolean>>({
-    'ch-1': true,
-    'ch-2': true,
-    'ch-3': true,
-    'ch-4': true,
-    'ch-5': true,
-  });
-  const [progress, setProgress] = useState<ProgressMap>({});
-  const [modalVisible, setModalVisible] = useState(false);
-  const modalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      noteTabFocus('course');
+    }, []),
+  );
 
-  const topCardWidth = width * 0.84;
-  const stats = progressStats(progress);
+  const chapters = COURSE_CHAPTERS;
 
-  const checkVisit = useCallback(() => {
-    if (!noteTabFocus('index')) return;
-    recordHomeVisit()
-      .then(({ visit }) => {
-        if (shouldShowModal(visit)) {
-          if (modalTimer.current) clearTimeout(modalTimer.current);
-          modalTimer.current = setTimeout(() => setModalVisible(true), 1500);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  useFocusEffect(checkVisit);
-
-  useEffect(() => {
-    getProgress().then(setProgress).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (s) => {
-      if (s === 'active') checkVisit();
-    });
-    return () => sub.remove();
-  }, [checkVisit]);
-
-  useEffect(() => {
-    return () => {
-      if (modalTimer.current) clearTimeout(modalTimer.current);
-    };
-  }, []);
-
-  const toggleChapter = (chapterId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    setExpandedChapters((prev) => ({ ...prev, [chapterId]: !prev[chapterId] }));
-  };
-
-  const handleSelectPodcast = (item: PodcastItem) => {
-    playTrack({
-      id: item.id,
-      title: item.title,
-      episode: item.episode || item.show || 'Lesson',
-      theme: item.theme,
-      badgeText: item.badgeText,
-      duration: item.duration,
-      videoId: item.videoId || item.id,
-    });
-    if (item.videoId) {
-      router.push({ pathname: '/video/[id]', params: { id: item.videoId } });
-    }
-  };
-
-  const openVideo = (id: string) => {
-    router.push({ pathname: '/video/[id]', params: { id } });
-  };
-
-  const visibleChapters = COURSE_CHAPTERS.filter((ch) => {
-    if (selectedSection === 0) return true;
-    return ch.section === selectedSection;
-  });
-
-  const name = auth.status === 'signed-in' ? auth.name.split(' ')[0] : 'there';
+  const userName = auth.status === 'signed-in' && auth.name ? auth.name.split(' ')[0] : 'Arjun';
 
   return (
     <View style={styles.root}>
-      <View style={styles.ambientTopGlow} pointerEvents="none">
+      {/* Small seamless atmospheric glow in top-right corner with 0 hard edges */}
+      <View style={styles.glowContainer} pointerEvents="none">
         <LinearGradient
-          colors={[Colors.ambientWarm, Colors.ambientCool, 'transparent']}
-          start={{ x: 0.8, y: 0 }}
-          end={{ x: 0.2, y: 1 }}
-          style={StyleSheet.absoluteFill}
+          colors={[
+            'rgba(245, 185, 125, 0.20)',
+            'rgba(240, 180, 115, 0.10)',
+            'rgba(235, 175, 110, 0.03)',
+            'rgba(18, 18, 18, 0)',
+          ]}
+          locations={[0, 0.35, 0.7, 1]}
+          start={{ x: 1, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={styles.seamlessGlow}
         />
       </View>
 
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + 4, paddingBottom: 220 },
+          {
+            paddingTop: Math.max(insets.top, 20),
+            paddingBottom: insets.bottom + 120,
+          },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* Top Header Row: Hello & Demo in the same horizontal div */}
         <Animated.View entering={Transitions.fadeDown(0)} style={styles.headerRow}>
-          <Text style={styles.pageTitle}>{t('podcast_title')}</Text>
+          <View style={styles.greetingRow}>
+            <Text style={styles.greetingHello}>Hello, </Text>
+            <Text style={styles.greetingNameBold}>{userName}</Text>
+          </View>
+
+          {/* User Profile Avatar - clean circular illustration without border or dot */}
           <AnimatedPressableScale
-            onPress={() => {
-              router.push('/account');
-            }}
-            hitSlop={8}
-            scaleTo={0.92}
-            style={styles.avatarBtn}>
-            {auth.status === 'signed-in' && auth.photo ? (
-              <Image source={{ uri: auth.photo }} style={styles.avatar} />
-            ) : (
-              <Ionicons name="person-circle-outline" size={32} color={Colors.muted} />
-            )}
+            onPress={() => router.push('/account')}
+            style={styles.avatarButton}
+          >
+            <Image
+              source={require('../../../assets/images/user_avatar.jpg')}
+              style={styles.avatarImg}
+            />
           </AnimatedPressableScale>
         </Animated.View>
 
-        {/* Progress strip (real data) */}
-        <Animated.View entering={FadeInDown.duration(400).delay(40)} style={styles.progressRow}>
-          <Ionicons name="trending-up" size={14} color={Colors.gold} />
-          <Text style={styles.progressText}>
-            {t('course_progress_done', {
-              done: stats.done,
-              total: stats.total,
-              pct: stats.pct,
-            })}
-          </Text>
+        {/* Headline matching Image 1 */}
+        <Animated.View entering={Transitions.fadeDown(40)} style={styles.headlineContainer}>
+          <Text style={styles.headline}>Let’s Learn New{'\n'}Stuff!</Text>
         </Animated.View>
 
-        {/* Top Masterclasses carousel */}
-        <Animated.View
-          entering={FadeInDown.duration(450).delay(80).springify()}
-          style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>{t('podcast_top')}</Text>
-        </Animated.View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          snapToInterval={topCardWidth + 14}
-          decelerationRate="fast"
-          contentContainerStyle={styles.topPodcastsContainer}>
-          {TOP_PODCASTS.map((item, index) => (
-            <Animated.View
-              key={item.id}
-              entering={FadeInRight.duration(450).delay(index * 90).springify()}>
-              <AnimatedPressableCard
-                onPress={() => handleSelectPodcast(item)}
-                style={[styles.topCard, { width: topCardWidth }]}
-                scaleTo={0.97}>
-                <View style={styles.topCardContent}>
-                  <Text style={styles.topCardTitle} numberOfLines={2}>
-                    {item.title}
-                  </Text>
-                  <Text style={styles.topCardShow} numberOfLines={1}>
-                    {item.show}
-                  </Text>
-                  <Text style={styles.topCardMeta} numberOfLines={1}>
-                    {item.meta}
-                  </Text>
-                </View>
-                <ConcentricArtwork
-                  size={96}
-                  theme={item.theme}
-                  badgeText={item.badgeText}
-                  borderRadius={20}
-                  showSpeakerBadge={true}
-                />
-              </AnimatedPressableCard>
-            </Animated.View>
-          ))}
-        </ScrollView>
-
-        {/* Chapters tiles */}
-        <Animated.View
-          entering={FadeInDown.duration(450).delay(150).springify()}
-          style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>{t('podcast_chapters')}</Text>
-        </Animated.View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesContainer}>
-          {CATEGORIES.map((cat, index) => (
-            <Animated.View
-              key={cat.id}
-              entering={FadeInRight.duration(450).delay(index * 70).springify()}>
-              <AnimatedPressableCard
-                onPress={() => {
-                  const map: Record<string, { ch: string; sec: 1 | 2 }> = {
-                    basics: { ch: 'ch-1', sec: 1 },
-                    cv: { ch: 'ch-2', sec: 1 },
-                    visa: { ch: 'ch-3', sec: 2 },
-                    jobhunt: { ch: 'ch-4', sec: 2 },
-                    attestation: { ch: 'ch-5', sec: 2 },
-                  };
-                  const target = map[cat.id];
-                  if (target) {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-                    if (selectedSection !== 0 && selectedSection !== target.sec) {
-                      setSelectedSection(0);
-                    }
-                    setExpandedChapters((prev) => ({ ...prev, [target.ch]: true }));
-                  }
-                }}
-                style={styles.categoryCard}
-                scaleTo={0.93}>
-                <View
-                  style={[
-                    styles.categoryIconWrap,
-                    { backgroundColor: `${cat.accentColor}1A` },
-                  ]}>
-                  <Ionicons name={cat.iconName} size={22} color={cat.accentColor} />
-                </View>
-                <Text style={styles.categoryName} numberOfLines={1}>
-                  {cat.title}
-                </Text>
-                <Text style={styles.categoryCount} numberOfLines={1}>
-                  {cat.count}
-                </Text>
-              </AnimatedPressableCard>
-            </Animated.View>
-          ))}
-        </ScrollView>
-
-        {/* Mentors */}
-        <Animated.View
-          entering={FadeInDown.duration(450).delay(200).springify()}
-          style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>{t('podcast_mentors')}</Text>
-        </Animated.View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.authorsContainer}>
-          {(AUTHORS || []).map((author, index) => (
-            <Animated.View
-              key={author.id}
-              entering={Transitions.fadeRight(index * 60)}>
-              <AnimatedPressableScale scaleTo={0.94} style={styles.authorCard}>
-                <Image source={{ uri: author.image }} style={styles.authorImage} />
-                <Text style={styles.authorName} numberOfLines={1}>
-                  {author.name}
-                </Text>
-                <Text style={styles.authorRole} numberOfLines={1}>
-                  {author.role}
-                </Text>
-              </AnimatedPressableScale>
-            </Animated.View>
-          ))}
-        </ScrollView>
-
-        {/* Curriculum */}
-        <View style={styles.courseHeaderSection}>
-          <View style={styles.courseHeaderRow}>
-            <View style={styles.courseHeaderMeta}>
-              <Text style={styles.courseMainTitle}>{t('podcast_curriculum')}</Text>
-              <Text style={styles.courseMainSub}>
-                {t('podcast_curriculum_sub', { steps: TOTAL_LESSONS, sections: 2, chapters: COURSE_CHAPTERS.length })}
-              </Text>
+        {/* Compact Progress Pill: No left icon, no border, with circular progress ring around right arrow */}
+        <Animated.View entering={Transitions.fadeDown(80)} style={styles.progressPillWrapper}>
+          <AnimatedPressableScale
+            onPress={() => router.push('/progress')}
+            style={styles.progressPill}
+          >
+            <View style={styles.progressPillLeft}>
+              <Text style={styles.progressBigText}>Progress</Text>
+              <View style={styles.progressDivider} />
+              <Text style={styles.progressSubText}>12 Achieved • 200 Score</Text>
             </View>
-            <View style={styles.stepsBadge}>
-              <Text style={styles.stepsBadgeText}>{t('podcast_lessons_badge', { n: TOTAL_LESSONS })}</Text>
-            </View>
-          </View>
 
-          {/* Section filter pills */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterPillContainer}>
-            {([0, 1, 2] as const).map((sec) => {
-              const active = selectedSection === sec;
-              const label =
-                sec === 0
-                  ? t('podcast_filter_all', { n: TOTAL_LESSONS })
-                  : sec === 1
-                    ? t('podcast_filter_s1', { n: 10 })
-                    : t('podcast_filter_s2', { n: 15 });
-              return (
+            {/* Circular progress ring around the arrow */}
+            <View style={styles.pillRingOuter}>
+              <View style={styles.pillArrowInner}>
+                <Ionicons name="arrow-forward" size={14} color="#121212" />
+              </View>
+            </View>
+          </AnimatedPressableScale>
+        </Animated.View>
+
+        {/* Vertical List of Chapter Cards (Exact Reference: image_png.png & home_chapters_progress.png) */}
+        <View style={styles.chaptersList}>
+          {chapters.map((chapter, idx) => {
+            const actualIndex = COURSE_CHAPTERS.findIndex((c) => c.id === chapter.id);
+            const themeKey = CHAPTER_THEME_KEYS[actualIndex % CHAPTER_THEME_KEYS.length];
+            const theme = ChapterCardThemes[themeKey];
+            const iconName = CHAPTER_ICONS[chapter.id] || 'book-outline';
+            const duration = CHAPTER_DURATIONS[chapter.id] || '1.5 hrs';
+            const lessonsCount = COURSE_VIDEOS.filter((v) => v.chapterId === chapter.id).length;
+
+            return (
+              <Animated.View
+                key={chapter.id}
+                entering={Transitions.fadeDown(160 + idx * 60)}
+              >
                 <AnimatedPressableScale
-                  key={sec}
-                  scaleTo={0.94}
-                  onPress={() => {
-                    setSelectedSection(sec);
-                  }}
-                  style={[styles.filterPill, active && styles.filterPillActive]}>
-                  <Text style={[styles.filterPillText, active && styles.filterPillTextActive]}>
-                    {label}
-                  </Text>
-                </AnimatedPressableScale>
-              );
-            })}
-          </ScrollView>
-
-          {/* Chapters accordion */}
-          <View style={styles.chaptersList}>
-            {visibleChapters.map((chapter) => {
-              const chapterLessons = COURSE_VIDEOS.filter((v) => v.chapterId === chapter.id);
-              const isExpanded = !!expandedChapters[chapter.id];
-              return (
-                <Animated.View
-                  key={chapter.id}
-                  layout={Transitions.layout}
-                  style={styles.chapterCard}>
-                  <AnimatedPressableScale
-                    scaleTo={0.98}
-                    onPress={() => toggleChapter(chapter.id)}
-                    style={styles.chapterHeader}>
-                    <View style={styles.chapterMeta}>
-                      <View style={styles.chapterTagRow}>
-                        <View style={styles.chapterTag}>
-                          <Text style={styles.chapterTagText}>
-                            {t('podcast_steps_range', { range: chapter.stepRange })}
-                          </Text>
-                        </View>
-                        <Text style={styles.chapterSectionText}>
-                          {t('podcast_section_n', { n: chapter.section })}
-                        </Text>
-                      </View>
-                      <Text style={styles.chapterTitle}>{chapterTitle(chapter, lang)}</Text>
-                      <Text style={styles.chapterHindi}>{chapter.hindiTitle}</Text>
-                      <Text style={styles.chapterDesc}>{chapter.description}</Text>
+                  onPress={() => router.push({ pathname: '/chapter/[id]', params: { id: chapter.id } })}
+                  style={[styles.chapterCard, { backgroundColor: theme.bg }]}
+                >
+                  {/* Card Top Row: White Circle Icon + Duration Chip */}
+                  <View style={styles.cardTopRow}>
+                    <View style={styles.cardIconCircle}>
+                      <Ionicons name={iconName} size={21} color={theme.accent} />
                     </View>
-                    <Ionicons
-                      name={isExpanded ? 'chevron-up-circle' : 'chevron-down-circle'}
-                      size={24}
-                      color={isExpanded ? Colors.gold : Colors.muted}
-                    />
-                  </AnimatedPressableScale>
+                    <View style={styles.durationChip}>
+                      <Ionicons name="time-outline" size={13} color="#2A2A2A" />
+                      <Text style={styles.durationChipText}>{duration}</Text>
+                    </View>
+                  </View>
 
-                  {isExpanded && (
-                    <Animated.View
-                      entering={Transitions.fadeDown(0)}
-                      exiting={Transitions.fadeOut(140)}
-                      style={styles.chapterLessonsWrap}>
-                      {chapterLessons.map((v) => (
-                        <VideoRow
-                          key={v.id}
-                          video={v}
-                          index={v.stepNumber - 1}
-                          locked={!entitlements.course && !v.freePreview}
-                          done={!!progress[v.id]}
-                          onPress={() => openVideo(v.id)}
-                        />
-                      ))}
-                    </Animated.View>
-                  )}
-                </Animated.View>
-              );
-            })}
-          </View>
+                  {/* Overline & Titles */}
+                  <Text style={[styles.chapterOverline, { color: theme.accent }]}>
+                    CHAPTER {actualIndex + 1} • {theme.tag}
+                  </Text>
+                  <Text style={[styles.chapterTitle, { color: theme.text }]}>
+                    {chapterTitle(chapter, lang)}
+                  </Text>
+                  <Text style={[styles.chapterDesc, { color: theme.textMuted }]} numberOfLines={2}>
+                    {chapter.description}
+                  </Text>
+
+                  {/* Card Bottom Row: Progress info + Circular Action Button with Ring */}
+                  <View style={styles.cardBottomRow}>
+                    <View style={styles.lessonsCountWrap}>
+                      <View style={[styles.statusDot, { backgroundColor: theme.accent }]} />
+                      <Text style={[styles.lessonsCountText, { color: theme.text }]}>
+                        {lessonsCount} Lessons • {actualIndex === 0 ? '2 Free' : 'Step ' + chapter.stepRange}
+                      </Text>
+                    </View>
+
+                    {/* Circular Button with Progress Ring (Exact Reference: image_png.png) */}
+                    <View style={[styles.actionRingOuter, { borderColor: theme.ring }]}>
+                      <View style={styles.actionCircleInner}>
+                        <Ionicons name="arrow-forward" size={16} color="#121212" />
+                      </View>
+                    </View>
+                  </View>
+                </AnimatedPressableScale>
+              </Animated.View>
+            );
+          })}
         </View>
       </ScrollView>
-
-      {/* Unlock bar (commerce) */}
-      {!entitlements.course && (
-        <View style={[styles.unlockBar, { bottom: insets.bottom + 92 }]}>
-          <View style={styles.unlockMeta}>
-            <Text style={styles.unlockPrice}>₹{FULL_PRICE_INR.toLocaleString('en-IN')}</Text>
-            <Text style={styles.unlockSub} numberOfLines={1}>
-              {t('unlock_bar_sub', {
-                rating: STATS.rating,
-                reviews: `${(STATS.reviewCount / 1000).toFixed(1)}k`,
-                price: `₹${FULL_PRICE_INR.toLocaleString('en-IN')}`,
-              })}
-            </Text>
-          </View>
-          <Pressable
-            onPress={() =>
-              router.push({
-                pathname: '/checkout/[productId]',
-                params: { productId: 'course_full' },
-              })
-            }
-            style={styles.unlockBtn}>
-            <Text style={styles.unlockBtnText}>{t('unlock_cta', { n: TOTAL_LESSONS })}</Text>
-          </Pressable>
-        </View>
-      )}
-
-      {/* Limited-time discount modal */}
-      <DiscountModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        onClaim={() => {
-          setModalVisible(false);
-          router.push({ pathname: '/checkout/[productId]', params: { productId: 'course_full' } });
-        }}
-      />
     </View>
   );
 }
@@ -446,295 +199,219 @@ export default function MasterclassesTabScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: Colors.canvas,
-  },
-  ambientTopGlow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 280,
-    zIndex: 0,
+    backgroundColor: '#121212',
   },
   scrollContent: {
-    paddingHorizontal: Spacing.screen,
-    zIndex: 1,
+    paddingHorizontal: 20,
+  },
+  glowContainer: {
+    position: 'absolute',
+    top: -40,
+    right: -40,
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    overflow: 'hidden',
+    zIndex: 0,
+  },
+  seamlessGlow: {
+    width: '100%',
+    height: '100%',
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.xs,
+    marginBottom: 16,
   },
-  pageTitle: {
-    ...Type.pageTitle,
-    color: Colors.text,
-  },
-  avatarBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-  },
-  avatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-  },
-  progressRow: {
+  greetingRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: Spacing.md,
+    alignItems: 'baseline',
   },
-  progressText: {
-    ...Type.small,
-    color: Colors.goldLight,
+  greetingHello: {
+    fontSize: 22,
+    fontFamily: 'Inter-Regular',
+    fontWeight: '400',
+    color: '#E0E0E0',
   },
-  sectionHeaderRow: {
-    marginTop: Spacing.lg,
-    marginBottom: 10,
+  greetingNameBold: {
+    fontSize: 24,
+    fontFamily: 'Inter-Bold',
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
-  sectionTitle: {
-    ...Type.sectionLabel,
-    color: Colors.muted,
+  avatarButton: {
+    overflow: 'hidden',
   },
-  topPodcastsContainer: {
-    paddingRight: Spacing.screen,
-    gap: 14,
+  avatarImg: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
-  topCard: {
-    ...Presets.card,
-    padding: Spacing.lg,
+  headlineContainer: {
+    marginTop: 18,
+    marginBottom: 16,
+  },
+  headline: {
+    fontSize: 34,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+    letterSpacing: -0.8,
+    lineHeight: 40,
+  },
+  progressPillWrapper: {
+    marginBottom: 22,
+  },
+  progressPill: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: '#1E1E1E',
+    borderRadius: Radii.pill,
+    paddingVertical: 7,
+    paddingLeft: 18,
+    paddingRight: 7,
+    borderWidth: 0,
   },
-  topCardContent: {
-    flex: 1,
-    marginRight: Spacing.md,
-    justifyContent: 'space-between',
-  },
-  topCardTitle: {
-    ...Type.cardTitle,
-    color: Colors.text,
-  },
-  topCardShow: {
-    ...Type.small,
-    color: Colors.muted,
-    marginTop: 6,
-  },
-  topCardMeta: {
-    ...Type.caption,
-    color: Colors.faint,
-    marginTop: 10,
-  },
-  categoriesContainer: {
-    paddingRight: Spacing.screen,
-    gap: Spacing.md,
-  },
-  categoryCard: {
-    ...Presets.tile,
-    width: 88,
-    height: 92,
-    justifyContent: 'center',
+  progressPillLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.sm,
+    gap: 10,
   },
-  categoryIconWrap: {
-    width: 40,
-    height: 40,
+  progressBigText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+  },
+  progressDivider: {
+    width: 1,
+    height: 14,
+    backgroundColor: '#383838',
+  },
+  progressSubText: {
+    fontSize: 12.5,
+    fontFamily: 'Inter-Medium',
+    color: '#A0A0A0',
+  },
+  pillRingOuter: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 2,
+    borderColor: '#7BC96F',
+    borderRightColor: 'rgba(123, 201, 111, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pillArrowInner: {
+    width: 28,
+    height: 28,
     borderRadius: 14,
+    backgroundColor: '#7BC96F',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  categoryName: {
-    ...Type.micro,
-    fontFamily: 'Inter-Bold',
-    color: Colors.text,
-  },
-  categoryCount: {
-    ...Type.caption,
-    fontSize: 10,
-    color: Colors.faint,
-    marginTop: 2,
-  },
-  authorsContainer: {
-    paddingRight: Spacing.screen,
-    gap: Spacing.lg,
-  },
-  authorCard: {
-    alignItems: 'center',
-    width: 78,
-  },
-  authorImage: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    marginBottom: 6,
-  },
-  authorName: {
-    ...Type.micro,
-    color: Colors.text,
-    textAlign: 'center',
-  },
-  authorRole: {
-    ...Type.caption,
-    fontSize: 10,
-    color: Colors.faint,
-    textAlign: 'center',
-    marginTop: 1,
-  },
-  courseHeaderSection: {
-    marginTop: Spacing.section,
-  },
-  courseHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-    gap: Spacing.sm,
-  },
-  courseHeaderMeta: {
-    flex: 1,
-  },
-  courseMainTitle: {
-    ...Type.chapterTitle,
-    fontSize: 20,
-    color: Colors.text,
-    letterSpacing: -0.3,
-  },
-  courseMainSub: {
-    ...Type.small,
-    color: Colors.muted,
-    marginTop: 2,
-  },
-  stepsBadge: {
-    backgroundColor: Colors.goldTint,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: Radii.sm,
-  },
-  stepsBadgeText: {
-    ...Type.caption,
-    fontFamily: 'Inter-Bold',
-    color: Colors.goldLight,
-  },
-  filterPillContainer: {
-    gap: Spacing.sm,
-    marginBottom: Spacing.lg,
-  },
-  filterPill: {
-    ...Presets.pill,
-  },
-  filterPillActive: {
-    ...Presets.pillActive,
-  },
-  filterPillText: {
-    ...Type.small,
-    color: Colors.muted,
-  },
-  filterPillTextActive: {
-    ...Type.small,
-    fontFamily: 'Inter-Bold',
-    color: Colors.textOn,
   },
   chaptersList: {
-    gap: Spacing.lg,
+    gap: 18,
   },
   chapterCard: {
-    backgroundColor: Colors.surfaceAlt,
-    borderRadius: Radii.card,
-    padding: 14,
+    borderRadius: 28,
+    padding: 22,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  chapterHeader: {
+  cardTopRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 4,
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  chapterMeta: {
-    flex: 1,
-    marginRight: 10,
+  cardIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  chapterTagRow: {
+  durationChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
-    marginBottom: 4,
+    gap: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radii.pill,
   },
-  chapterTag: {
-    backgroundColor: Colors.goldTint,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: Radii.sm,
+  durationChipText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#2A2A2A',
   },
-  chapterTagText: {
-    ...Type.caption,
+  chapterOverline: {
+    fontSize: 11,
     fontFamily: 'Inter-Bold',
-    color: Colors.goldLight,
-  },
-  chapterSectionText: {
-    ...Type.caption,
-    color: Colors.faint,
+    letterSpacing: 0.8,
+    marginBottom: 6,
   },
   chapterTitle: {
-    ...Type.chapterTitle,
-    color: Colors.text,
-    marginTop: 2,
-  },
-  chapterHindi: {
-    ...Type.small,
-    color: Colors.gold,
-    marginTop: 1,
+    fontSize: 20,
+    fontFamily: 'Inter-Bold',
+    lineHeight: 26,
+    marginBottom: 8,
   },
   chapterDesc: {
-    ...Type.caption,
-    fontSize: 11.5,
-    lineHeight: 16,
-    color: Colors.muted,
-    marginTop: 4,
+    fontSize: 13.5,
+    fontFamily: 'Inter-Regular',
+    lineHeight: 19,
+    marginBottom: 18,
   },
-  chapterLessonsWrap: {
-    marginTop: 14,
-    paddingTop: Spacing.md,
+  cardBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  unlockBar: {
-    position: 'absolute',
-    left: Spacing.lg,
-    right: Spacing.lg,
+  lessonsCountWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
-    backgroundColor: 'rgba(30,31,37,0.97)',
-    borderRadius: Radii.card,
-    padding: Spacing.md,
+    gap: 8,
   },
-  unlockMeta: {
-    flex: 1,
-    paddingLeft: 4,
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
-  unlockPrice: {
-    ...Type.price,
-    color: Colors.goldLight,
+  lessonsCountText: {
+    fontSize: 13,
+    fontFamily: 'Inter-SemiBold',
   },
-  unlockSub: {
-    ...Type.caption,
-    color: Colors.muted,
-  },
-  unlockBtn: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: Radii.card,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
+  actionRingOuter: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  unlockBtnText: {
-    ...Presets.primaryBtnText,
-    fontSize: 13,
+  actionCircleInner: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
 });

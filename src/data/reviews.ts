@@ -87,4 +87,33 @@ export const HERO_STORY = {
   result: 'AED 6,000/month',
   role: 'Logistics Coordinator, Dubai',
   text: 'I was earning ₹18,000 in Jaipur. Six months after this course I signed an offer for AED 6,000 with housing. My family still cannot believe it.',
+  // OWNER: paste the unlisted YouTube video ID of this student's video story
+  // (e.g. 'dQw4w9WgXcQ') — the "Watch story" button appears automatically.
+  // Leave as null until you have the video.
+  youtubeId: null as string | null,
 };
+
+/**
+ * Proof media — OWNER EDITABLE.
+ *
+ * VIDEO slots: upload each testimonial as an UNLISTED YouTube video, then
+ * paste just the video ID (the part after "v=" in the URL) into `youtubeId`
+ * and write a short caption. Thumbnails load automatically from YouTube.
+ * Leave `youtubeId: null` for slots you have not filled yet — empty slots
+ * are hidden automatically, so add as many as you like.
+ *
+ * IMAGE slots: local require() path or remote URL (offer letters, visa
+ * stamps, first-day photos). Leave `image: ''` until filled.
+ */
+export interface ProofVideo {
+  id: string;
+  // Unlisted YouTube video ID, or null = hidden slot (fill later)
+  youtubeId: string | null;
+  caption: string;
+}
+
+export const PROOF_VIDEOS: ProofVideo[] = [
+  { id: 'pv1', youtubeId: null, caption: 'From Jaipur to Dubai — full story' },
+  { id: 'pv2', youtubeId: null, caption: 'How the CV module got 4 interviews' },
+  { id: 'pv3', youtubeId: null, caption: 'Avoiding a fake agent — visa truth' },
+];
